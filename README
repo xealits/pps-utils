@@ -1,0 +1,5 @@
+CAEN VME utils
+==============
+
+Bunch of utilities for communicating with CAEN boards on VME.
+
