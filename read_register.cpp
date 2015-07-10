@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 
 #include "CAENVMElib.h"
 #include "CAENVMEoslib.h"
@@ -10,9 +11,12 @@
 
 
 
-void main() {
 
-fBridge = new VME::BridgeVx718("/dev/a2818_0", VME::CAEN_V2718); 
+
+
+int main(int argc, char *argv[]) {
+
+BridgeVx718 * fBridge = new BridgeVx718("/dev/a2818_0", CAEN_V2718); 
 
 int32_t bridge_handle = fBridge->GetHandle();
 

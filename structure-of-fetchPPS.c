@@ -11,7 +11,7 @@
 void main() {
 
 vme = new VMEReader("/dev/a2818_0", VME::CAEN_V2718, with_socket);
-	vme{ fBridge = new VME::BridgeVx718(device, type); 
+	vme{ fBridge = new VME::BridgeVx718(device, type);
              enum BridgeType { CAEN_V1718, CAEN_V2718 };   }
 const uint32_t tdc_address = 0x00aa0000; // V1290A (32 ch., CERN)
 vme->AddTDC(tdc_address);
