@@ -16,7 +16,7 @@
 
 int main(int argc, char *argv[]) {
 
-BridgeVx718 * fBridge = new BridgeVx718("/dev/a2818_0", CAEN_V2718); 
+VME::BridgeVx718 * fBridge = new VME::BridgeVx718("/dev/a2818_0", VME::CAEN_V2718);
 
 int32_t bridge_handle = fBridge->GetHandle();
 
