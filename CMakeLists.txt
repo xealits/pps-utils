@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
 project(PPS_utils)
 
 set(CAEN_LOCATION "/usr/lib")
@@ -27,4 +27,9 @@ set(CMAKE_CXX_FLAGS "-DLINUX")
 set(CMAKE_CXX_LINK_FLAGS "-lCAENVME")
 
 add_executable(readreg read_register.cpp $<TARGET_OBJECTS:src_lib> $<TARGET_OBJECTS:ws_lib>)
+add_executable(readevs read_outputbuf.cpp $<TARGET_OBJECTS:src_lib> $<TARGET_OBJECTS:ws_lib>)
+add_executable(writereg write_register.cpp $<TARGET_OBJECTS:src_lib> $<TARGET_OBJECTS:ws_lib>)
+add_executable(vmesysreset vme_system_reset.cpp $<TARGET_OBJECTS:src_lib> $<TARGET_OBJECTS:ws_lib>)
+#add_library(readtdcteg SHARED src/ReadTDCRegister.cpp)
 target_link_libraries(readreg caen)
+#target_link_libraries(readtdcreg caen)
