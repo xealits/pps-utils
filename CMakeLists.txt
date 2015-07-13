@@ -30,6 +30,7 @@ add_executable(readreg read_register.cpp $<TARGET_OBJECTS:src_lib> $<TARGET_OBJE
 add_executable(readevs read_outputbuf.cpp $<TARGET_OBJECTS:src_lib> $<TARGET_OBJECTS:ws_lib>)
 add_executable(writereg write_register.cpp $<TARGET_OBJECTS:src_lib> $<TARGET_OBJECTS:ws_lib>)
 add_executable(vmesysreset vme_system_reset.cpp $<TARGET_OBJECTS:src_lib> $<TARGET_OBJECTS:ws_lib>)
+add_executable(vmebridge BridgeVME.cpp $<TARGET_OBJECTS:src_lib> $<TARGET_OBJECTS:ws_lib>)
 #add_library(readtdcteg SHARED src/ReadTDCRegister.cpp)
 target_link_libraries(readreg caen)
 #target_link_libraries(readtdcreg caen)
