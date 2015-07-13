@@ -14,6 +14,8 @@
 
 #define MAX_INPUT_SIZE 256
 
+void print_vme_text_protocol_help( void );
+void process_input(char *input);
 
 
 int main(int argc, char *argv[]) {
@@ -71,7 +73,7 @@ else{
 
 
 
-void print_vme_text_protocol_help( void ){
+void print_vme_text_protocol_help( void ) {
     printf("HELP_LINES\n");
 }
 
