@@ -3,3 +3,21 @@ CAEN VME utils
 
 Bunch of utilities for communicating with CAEN boards on VME.
 
+The scheme is to have a VME bridge utility,
+which wraps the CAEN lib calls on VME bridge
+and provides a plain text protocl for them.
+Plus implementations of TDC, General Purpose etc boards
+(their registers etc, the datasheet)
+in the VME plain text protocol.
+
+The scheme looks like this:
+
+     VME       |       VME bridge utility          |=
+ plain text ---|            (process)              |= VME
+  protocol     |                                   |= bus
+ /             | [PCI board]--[optical-VME board]= |=
+|
+implementation of
+TDC, General etc boards
+in the plain text protocol
+
