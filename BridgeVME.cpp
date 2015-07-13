@@ -46,7 +46,7 @@ else{
          printf ("Enter the VME Call (or help, quit): ");
          fgets (input, MAX_INPUT_SIZE, stdin);
          if ((strlen(input)>0) && (input[strlen (input) - 1] == '\n'))
-         input[strlen (input) - 1] = '\0';
+            { input[strlen (input) - 1] = '\0'; }
          // scanf ("%63s", input);
          if ( strcmp(input, "quit") = 0) { delete bridge; return 0; }
          else if ( strcmp(input, "help") = 0) { print_vme_text_protocol_help(); }
