@@ -14,13 +14,6 @@
 
 #define MAX_INPUT_SIZE 256
 
-struct CAENlib_VME_call
-{
-    
-};
-
-CAENlib_VME_calls
-
 
 
 int main(int argc, char *argv[]) {
@@ -69,6 +62,13 @@ else{
     }
 
 }
+
+
+// struct CAENlib_VME_call
+// {
+    // 
+// };
+
 
 
 void print_vme_text_protocol_help( void ){
