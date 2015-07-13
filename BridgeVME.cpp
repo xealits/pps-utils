@@ -44,6 +44,8 @@ else{
     while (1) { // read stdin, run CAEN call
          printf ("Enter the VME Call (or help, quit): ");
          fgets (input, MAX_INPUT_SIZE, stdin);
+         if ((strlen(input)>0) && (input[strlen (input) - 1] == '\n'))
+         input[strlen (input) - 1] = '\0';
          // scanf ("%63s", input);
          if ( strcmp(input,"quit") != 0) printf("Sorry, only 'quit' is available now.\n");
          else { delete bridge; return 0; }
