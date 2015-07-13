@@ -12,6 +12,7 @@
 #include "CAEN_VME_TDC_addresses.h" // listing of addresses on TDC board (for instance kStatus)
 
 
+#define MAX_INPUT_SIZE 256
 
 
 
@@ -39,10 +40,11 @@ else{
     int32_t bridge_handle = bridge->GetHandle();
     printf("Initialized the VME Bridge at handle ID: %08x\n", bridge_handle);
 
-    char input[64];
+    char input[MAX_INPUT_SIZE];
     while (1) { // read stdin, run CAEN call
          printf ("Enter the VME Call (or help, quit): ");
-         scanf ("%63s", input);
+         fgets (input, MAX_INPUT_SIZE, stdin);
+         // scanf ("%63s", input);
          if ( strcmp(input,"quit") != 0) printf("Sorry, only 'quit' is available now.\n");
          else { delete bridge; return 0; }
     }
