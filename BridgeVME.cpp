@@ -14,6 +14,12 @@
 
 #define MAX_INPUT_SIZE 256
 
+struct CAENlib_VME_call
+{
+    
+};
+
+CAENlib_VME_calls
 
 
 
@@ -47,8 +53,9 @@ else{
          if ((strlen(input)>0) && (input[strlen (input) - 1] == '\n'))
          input[strlen (input) - 1] = '\0';
          // scanf ("%63s", input);
-         if ( strcmp(input,"quit") != 0) printf("Sorry, only 'quit' is available now.\n");
-         else { delete bridge; return 0; }
+         if ( strcmp(input, "quit") = 0) { delete bridge; return 0; }
+         else if ( strcmp(input, "help") = 0) { print_vme_text_protocol_help(); }
+         else { process_input(input); }
     }
 
     // READING Register
@@ -63,3 +70,12 @@ else{
 
 }
 
+
+void print_vme_text_protocol_help( void ){
+    printf("HELP_LINES\n");
+}
+
+
+void process_input(char *input) {
+    printf("Sorry, only 'quit' and 'help' are available now.\n");
+}
