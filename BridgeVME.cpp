@@ -113,7 +113,7 @@ CAENVME_API parse_CAENVME_ReadCycle(char* arguments){
     uint32_t address;
     uint16_t value;
     printf("Got arguments:\n%s\n", arguments);
-    sscanf (arguments, "%x", str, &address);
+    sscanf (arguments, "%x", &address);
     printf("Got address:\n%x\n", address);
     CAENVME_ReadCycle( bridge_handle, address, &value, cvA32_U_DATA, cvD16 );
     printf("Read value:\n%x\n", value);
