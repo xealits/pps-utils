@@ -18,10 +18,10 @@ using namespace std;
 
 #define MAX_INPUT_SIZE 256
 
+VME::BridgeVx718 * bridge;
+int32_t bridge_handle;
+
 void print_vme_text_protocol_help( void );
-void process_input(char *input);
-
-
 
 
 struct CAENlib_VME_Call // True only for some calls, For ReadCycle and WriteCycle for instance
@@ -60,9 +60,9 @@ else{
     // printf("Of board: 0x%08x\n", tdcboard_base_address);
 
 
-    VME::BridgeVx718 * bridge = new VME::BridgeVx718(bridge_device_filename, VME::CAEN_V2718);
-
-    int32_t bridge_handle = bridge->GetHandle();
+    // the program handles one bridge -- the values are global to whole program
+    bridge = new VME::BridgeVx718(bridge_device_filename, VME::CAEN_V2718);
+    bridge_handle = bridge->GetHandle();
     printf("Initialized the VME Bridge at handle ID: %08x\n", bridge_handle);
 
     char input[MAX_INPUT_SIZE];
@@ -78,7 +78,7 @@ else{
          if ( strcmp(input, "quit") == 0) { delete bridge; return 0; }
          else if ( strcmp(input, "help") == 0 ) { print_vme_text_protocol_help(); }
          else if ( strcmp(input, "") == 0 ) { ; }
-         else { // process_input(input); }
+         else {
                char * pch; // pure C comming in!
                pch = strtok(input, " "); // blank space is the only delimeter in out case
                // pch now points to the first token of the call,
@@ -89,33 +89,10 @@ else{
                } else {
                    // found
                    CAENlib_VME_Calls[pch].parse_and_call( strtok(NULL, "") );
-                   //CAENlib_VME_Calls[call_name].call( bridge_handle, address, &value, cvA32_U_DATA, cvD16 );
-                   //printf("Data after call:%x\n", value);
-               }
-/*              uint16_t value;
-              uint32_t address;
-              char call_name[32];
-              sscanf(input, "%s %x", call_name, &address);
-              printf("Got:\ninput=%s\n%s %x(%d)\n", input, call_name, address, address);
-              if ( CAENlib_VME_Calls.find(call_name) == CAENlib_VME_Calls.end() ) {
-                   // not found
-                   printf("The call is not known.\n");
-                 } else {
-                   // found
-                   CAENlib_VME_Calls[call_name].call( bridge_handle, address, &value, cvA32_U_DATA, cvD16 );
-                   printf("Data after call:%x\n", value);
-                 }
-*/              }
+               }              }
          printf (prompt);
     }
 
-    // READING Register
-    // uint16_t value;
-    //CAENVME_ReadCycle(bridge_handle, tdcboard_base_address + kStatus, &value, cvA32_U_DATA, cvD16);
-    // CAENVME_ReadCycle(bridge_handle, tdcboard_base_address + register_address, &value, cvA32_U_DATA, cvD16);
-
-    // printf("Register at 0x%04x of board 0x%08x:\n", register_address, tdcboard_base_address);
-    // printf("value = 0x%04x\n", value);
     delete bridge;
     }
 
@@ -130,28 +107,15 @@ void print_vme_text_protocol_help( void ) {
     }
 }
 
-/*
-void process_input(char *input) {
-    uint16_t value;
-    uint32_t address;
-    char * call_name;
-    sscanf(input, "%s %x", call_name, &address);
-    printf("Got:\n%s %x\n", call_name, address);
-    //char pch;
-    //pch = strtok (input," ,.-");
-    //while (pch != NULL)
-    //{
-       //printf ("%s\n",pch);
-       //pch = strtok (NULL, " ,.-");
-    //}
-
-    //printf("Sorry, only 'quit' and 'help' are available now.\n");
-}
-*/
-
 
 CAENVME_API parse_CAENVME_ReadCycle(char* arguments){
     // parse string, call CAENVMElib function
+    uint32_t address;
+    uint16_t value;
     printf("Got arguments:\n%s\n", arguments);
+    sscanf (arguments, "%x", str, &address);
+    printf("Got address:\n%x\n", address);
+    CAENVME_ReadCycle( bridge_handle, address, &value, cvA32_U_DATA, cvD16 );
+    printf("Read value:\n%x\n", value);
 }
 
