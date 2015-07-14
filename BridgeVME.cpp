@@ -131,7 +131,7 @@ CAENVME_API parse_and_call_CAENVME_ReadCycle(char* arguments){
 CAENVME_API parse_and_call_CAENVME_BoardFWRelease(char* arguments){
     // parse string, call CAENVMElib function
     CAENVME_API caen_api_return_value;
-    char *FWRel;
+    char FWRel[64];
     printf("Reading firmware release from device:\n(handle ID) %d\n", bridge_handle);
     caen_api_return_value = CAENVME_BoardFWRelease(bridge_handle, FWRel);
     printf("Read value:\n%s\n", FWRel);
