@@ -29,9 +29,10 @@ struct CAENlib_VME_Call // True only for some calls, For ReadCycle and WriteCycl
     //CAENVME_API (* call)(long Handle, unsigned long Address, void * Data, CVAddressModifier AM, CVDataWidth DW);
     CAENVME_API (* parse_and_call)(char* arguments);
     string helpstr;
- } read_cycle;
+ } read_cycle, read_bridge_firmware_release;
 
-CAENVME_API parse_CAENVME_ReadCycle(char* arguments);
+CAENVME_API parse_and_call_CAENVME_ReadCycle(char* arguments);
+CAENVME_API parse_and_call_CAENVME_BoardFWRelease(char* arguments);
 
 map<string, CAENlib_VME_Call> CAENlib_VME_Calls;
 
@@ -39,10 +40,14 @@ map<string, CAENlib_VME_Call> CAENlib_VME_Calls;
 
 int main(int argc, char *argv[]) {
 
-read_cycle.parse_and_call = parse_CAENVME_ReadCycle;
+read_cycle.parse_and_call = parse_and_call_CAENVME_ReadCycle;
 read_cycle.helpstr = "Performs a single VME read cycle.\nTakes VME bus address. Returns the content.\n";
 
-CAENlib_VME_Calls["readcycle"] = read_cycle;
+read_bridge_firmware_release.parse_and_call = parse_and_call_CAENVME_BoardFWRelease;
+read_bridge_firmware_release.helpstr = "Permits to read the firmware release loaded into the device.\nTakes no arguments. Returns FW release.\n";
+
+CAENlib_VME_Calls["read_cycle"] = read_cycle;
+CAENlib_VME_Calls["read_bridge_fw"] = CAENlib_VME_Calls["readcycle"] = read_cycle;;
 
 if (argc!=2){
      printf("One argument is required -- VME bridge device filename.\n");
@@ -108,14 +113,27 @@ void print_vme_text_protocol_help( void ) {
 }
 
 
-CAENVME_API parse_CAENVME_ReadCycle(char* arguments){
+CAENVME_API parse_and_call_CAENVME_ReadCycle(char* arguments){
     // parse string, call CAENVMElib function
+    CAENVME_API caen_api_return_value;
     uint32_t address;
     uint16_t value;
     printf("Got arguments:\n%s\n", arguments);
     sscanf (arguments, "%x", &address);
     printf("Got address:\n%x\n", address);
-    CAENVME_ReadCycle( bridge_handle, address, &value, cvA32_U_DATA, cvD16 );
+    caen_api_return_value = CAENVME_ReadCycle( bridge_handle, address, &value, cvA32_U_DATA, cvD16 );
     printf("Read value:\n%x\n", value);
+    return caen_api_return_value;
 }
 
+
+
+CAENVME_API parse_and_call_CAENVME_BoardFWRelease(char* arguments){
+    // parse string, call CAENVMElib function
+    CAENVME_API caen_api_return_value;
+    char *FWRel;
+    printf("Reading firmware release from device:\n(handle ID) %d\n", bridge_handle);
+    caen_api_return_value = CAENVME_BoardFWRelease(bridge_handle, FWRel);
+    printf("Read value:\n%s\n", FWRel);
+    return caen_api_return_value;
+}
