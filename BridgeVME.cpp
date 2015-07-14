@@ -15,39 +15,20 @@ using namespace std;
 
 #include "CAEN_VME_TDC_addresses.h" // listing of addresses on TDC board (for instance kStatus)
 
+#include "CAENVME_plain_text_control.cpp" // Nobody expects Spanish inquisition!
+
 
 #define MAX_INPUT_SIZE 256
 
 VME::BridgeVx718 * bridge;
 int32_t bridge_handle;
 
-void print_vme_text_protocol_help( void );
+map<string, Text_to_CAENVME_Calls::CAENlib_VME_Call> text_to_calls_map = Text_to_CAENVME_Calls::create_text_to_CAENlib_map();
 
-
-struct CAENlib_VME_Call // True only for some calls, For ReadCycle and WriteCycle for instance
- {
-    //CAENVME_API (* call)(long Handle, unsigned long Address, void * Data, CVAddressModifier AM, CVDataWidth DW);
-    CAENVME_API (* parse_and_call)(char* arguments);
-    string helpstr;
- } read_cycle, read_bridge_firmware_release;
-
-CAENVME_API parse_and_call_CAENVME_ReadCycle(char* arguments);
-CAENVME_API parse_and_call_CAENVME_BoardFWRelease(char* arguments);
-
-map<string, CAENlib_VME_Call> CAENlib_VME_Calls;
 
 
 
 int main(int argc, char *argv[]) {
-
-read_cycle.parse_and_call = parse_and_call_CAENVME_ReadCycle;
-read_cycle.helpstr = "Performs a single VME read cycle.\nTakes VME bus address. Returns the content.\n";
-
-read_bridge_firmware_release.parse_and_call = parse_and_call_CAENVME_BoardFWRelease;
-read_bridge_firmware_release.helpstr = "Permits to read the firmware release loaded into the device.\nTakes no arguments. Returns FW release.\n";
-
-CAENlib_VME_Calls["read_cycle"] = read_cycle;
-CAENlib_VME_Calls["read_bridge_fw"] = read_bridge_firmware_release;
 
 if (argc!=2){
      printf("One argument is required -- VME bridge device filename.\n");
@@ -69,6 +50,8 @@ else{
     bridge = new VME::BridgeVx718(bridge_device_filename, VME::CAEN_V2718);
     bridge_handle = bridge->GetHandle();
     printf("Initialized the VME Bridge at handle ID: %08x\n", bridge_handle);
+    //CAENVME_plain_text_control text_to_CAENVME_call( bridge_handle );
+    //Text_to_CAENVME_Calls::bridge_handle = bridge_handle;
 
     char input[MAX_INPUT_SIZE];
 
@@ -81,20 +64,23 @@ else{
             { input[strlen (input) - 1] = '\0'; }
          // scanf ("%63s", input);
          if ( strcmp(input, "quit") == 0) { delete bridge; return 0; }
-         else if ( strcmp(input, "help") == 0 ) { print_vme_text_protocol_help(); }
+         else if ( strcmp(input, "help") == 0 ) {
+		Text_to_CAENVME_Calls::print_vme_text_protocol_help(text_to_calls_map);
+	 }
          else if ( strcmp(input, "") == 0 ) { ; }
-         else {
-               char * pch; // pure C comming in!
-               pch = strtok(input, " "); // blank space is the only delimeter in out case
-               // pch now points to the first token of the call,
-               // it has to be a call name
-               if ( CAENlib_VME_Calls.find(pch) == CAENlib_VME_Calls.end() ) {
-                   // not found
-                   printf("The call is not known.\n");
-               } else {
-                   // found
-                   CAENlib_VME_Calls[pch].parse_and_call( strtok(NULL, "") );
-               }              }
+         else { //text_to_CAENVME_call.process_text_command( input ); }
+		char * pch; // pure C comming in!
+		pch = strtok(input, " "); // blank space is the only delimeter in out case
+		// pch now points to the first token of the call,
+		// it has to be a call name
+		if ( text_to_calls_map.find(pch) == text_to_calls_map.end() ) {
+			// not found
+			printf("The call is not known.\n");
+		} else {
+			// found
+			text_to_calls_map[pch].parse_and_call( bridge_handle, strtok(NULL, "") );
+		}
+	}
          printf (prompt);
     }
 
@@ -105,35 +91,7 @@ else{
 
 
 
-void print_vme_text_protocol_help( void ) {
-    printf("HELP_LINES\n");
-    for (std::map<string, CAENlib_VME_Call>::iterator iter=CAENlib_VME_Calls.begin(); iter!=CAENlib_VME_Calls.end(); iter++ ) {
-        cout << iter->first << ": " << iter->second.helpstr << endl;
-    }
-}
-
-
-CAENVME_API parse_and_call_CAENVME_ReadCycle(char* arguments){
-    // parse string, call CAENVMElib function
-    CAENVME_API caen_api_return_value;
-    uint32_t address;
-    uint16_t value;
-    printf("Got arguments:\n%s\n", arguments);
-    sscanf (arguments, "%x", &address);
-    printf("Got address:\n%x\n", address);
-    caen_api_return_value = CAENVME_ReadCycle( bridge_handle, address, &value, cvA32_U_DATA, cvD16 );
-    printf("Read value:\n%x\n", value);
-    return caen_api_return_value;
-}
 
 
 
-CAENVME_API parse_and_call_CAENVME_BoardFWRelease(char* arguments){
-    // parse string, call CAENVMElib function
-    CAENVME_API caen_api_return_value;
-    char FWRel[64];
-    printf("Reading firmware release from device:\n(handle ID) %d\n", bridge_handle);
-    caen_api_return_value = CAENVME_BoardFWRelease(bridge_handle, FWRel);
-    printf("Read value:\n%s\n", FWRel);
-    return caen_api_return_value;
-}
+
