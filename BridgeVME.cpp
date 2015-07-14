@@ -27,9 +27,11 @@ void process_input(char *input);
 struct CAENlib_VME_Call // True only for some calls, For ReadCycle and WriteCycle for instance
  {
     //CAENVME_API (* call)(long Handle, unsigned long Address, void * Data, CVAddressModifier AM, CVDataWidth DW);
-    CAENVME_API (* call)(int32_t Handle, uint32_t Address, void * Data, CVAddressModifier AM, CVDataWidth DW);
+    CAENVME_API (* parse_and_call)(string arguments);
     string helpstr;
  } read_cycle;
+
+CAENVME_API parse_CAENVME_ReadCycle(string arguments);
 
 map<string, CAENlib_VME_Call> CAENlib_VME_Calls;
 
@@ -37,7 +39,7 @@ map<string, CAENlib_VME_Call> CAENlib_VME_Calls;
 
 int main(int argc, char *argv[]) {
 
-read_cycle.call = CAENVME_ReadCycle;
+read_cycle.parse_and_call = parse_CAENVME_ReadCycle;
 read_cycle.helpstr = "Performs a single VME read cycle.\nTakes VME bus address. Returns the content.\n";
 
 CAENlib_VME_Calls["readcycle"] = read_cycle;
@@ -77,7 +79,12 @@ else{
          else if ( strcmp(input, "help") == 0 ) { print_vme_text_protocol_help(); }
          else if ( strcmp(input, "") == 0 ) { ; }
          else { // process_input(input); }
-              uint16_t value;
+               char * pch; // pure C comming in!
+               pch = strtok(input, " "); // blank space is the only delimeter in out case
+               // pch now points to the first token of the call,
+               // it has to be a call name
+               CAENlib_VME_Calls[call_name].parse_and_call( string(strtok(NULL, "")) );
+/*              uint16_t value;
               uint32_t address;
               char call_name[32];
               sscanf(input, "%s %x", call_name, &address);
@@ -90,7 +97,7 @@ else{
                    CAENlib_VME_Calls[call_name].call( bridge_handle, address, &value, cvA32_U_DATA, cvD16 );
                    printf("Data after call:%x\n", value);
                  }
-              }
+*/              }
          printf (prompt);
     }
 
@@ -133,4 +140,9 @@ void process_input(char *input) {
     //printf("Sorry, only 'quit' and 'help' are available now.\n");
 }
 
+
+CAENVME_API parse_CAENVME_ReadCycle(string arguments){
+    // parse string, call CAENVMElib function
+    printf("Got arguments:\n%s\n", arguments);
+}
 
