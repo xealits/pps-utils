@@ -47,7 +47,7 @@ read_bridge_firmware_release.parse_and_call = parse_and_call_CAENVME_BoardFWRele
 read_bridge_firmware_release.helpstr = "Permits to read the firmware release loaded into the device.\nTakes no arguments. Returns FW release.\n";
 
 CAENlib_VME_Calls["read_cycle"] = read_cycle;
-CAENlib_VME_Calls["read_bridge_fw"] = CAENlib_VME_Calls["readcycle"] = read_cycle;;
+CAENlib_VME_Calls["read_bridge_fw"] = read_bridge_firmware_release;
 
 if (argc!=2){
      printf("One argument is required -- VME bridge device filename.\n");
