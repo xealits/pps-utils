@@ -36,7 +36,7 @@ class CAENVME_plain_text_control
 		void print_vme_text_protocol_help(){
 			printf("HELP_LINES\n");
 			//printf("Device bridge handle ID:%d\n\n", bridge_handle);
-			for (std::map<string, CAENlib_VME_Call>::iterator iter=help_page.begin(); iter!=help_page.end(); iter++ ) {
+			for (std::map<string, help_record>::iterator iter=help_page.begin(); iter!=help_page.end(); iter++ ) {
 				cout << iter->second.command_name << " " << iter->second.arguments_names << ":\n\t" << iter->second.description << endl;
 			}
 		};
