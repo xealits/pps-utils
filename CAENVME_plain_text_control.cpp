@@ -11,12 +11,19 @@ namespace Text_to_CAENVME_Calls {
 
 	int32_t *bridge_handler;
 
+	struct VMECall_help_record
+	{
+		string command_name;
+		string arguments;
+		string description;
+	};
+
 	struct CAENlib_VME_Call
 	{
 		//CAENVME_API (* call)(long Handle, unsigned long Address, void * Data, CVAddressModifier AM, CVDataWidth DW);
 		CAENVME_API (* parse_and_call)( char* arguments );
 		//CAENVME_API ((CAENVME_plain_text_control::) parse_and_call)(char* arguments);
-		string helpstr;
+		VMECall_help_record help_record;
 	};
 
 	typedef map<string, CAENlib_VME_Call> TYPE_text_to_CAENlib_map;
@@ -28,7 +35,13 @@ namespace Text_to_CAENVME_Calls {
 		printf("HELP_LINES\n");
 		//printf("Device bridge handle ID:%d\n\n", *bridge_handler);
 		for (std::map<string, CAENlib_VME_Call>::iterator iter=m.begin(); iter!=m.end(); iter++ ) {
-	    	cout << iter->first << ": " << iter->second.helpstr << endl;
+	    	cout
+	    		<< iter->second.help_record.command_name
+	    		<< " "
+	    		<< iter->second.help_record.arguments
+	    		<< "\n\t"
+	    		<< iter->second.help_record.description
+	    		<< endl;
 		}
 	}
 
@@ -74,12 +87,15 @@ namespace Text_to_CAENVME_Calls {
 		return caen_api_return_value;
 	}
 
+
 	map<string, CAENlib_VME_Call>  create_text_to_CAENlib_map( void ) {
 		map<string, CAENlib_VME_Call> m;
 		m["read_cycle"] = (CAENlib_VME_Call) {parse_and_call_CAENVME_ReadCycle,
-			"Performs a single VME read cycle.\nTakes VME bus address. Returns the content.\n"};
+			(VMECall_help_record) { "read_cycle", "<VME address>", "Performs a single VME read cycle.\nPrints the result.\n"}
+		};
 		m["read_bridge_fw"] = (CAENlib_VME_Call) {parse_and_call_CAENVME_BoardFWRelease,
-			"Permits to read the firmware release loaded into the device.\nTakes no arguments. Returns FW release.\n"};
+			(VMECall_help_record) { "read_bridge_fw", "", "Permits to read the firmware release loaded into the device.\nPrints FW release.\n"}
+		};
 	return m;
 	}
 
