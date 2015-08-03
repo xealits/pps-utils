@@ -9,7 +9,7 @@ using namespace std;
 
 namespace Text_to_CAENVME_Calls {
 
-	int32_t * bridge_handler;
+	int32_t *bridge_handler;
 
 	struct CAENlib_VME_Call
 	{
@@ -26,7 +26,7 @@ namespace Text_to_CAENVME_Calls {
 
 	void print_vme_text_protocol_help( TYPE_text_to_CAENlib_map m ){
 		printf("HELP_LINES\n");
-		//printf("Device bridge handle ID:%d\n\n", bridge_handler);
+		//printf("Device bridge handle ID:%d\n\n", *bridge_handler);
 		for (std::map<string, CAENlib_VME_Call>::iterator iter=m.begin(); iter!=m.end(); iter++ ) {
 	    	cout << iter->first << ": " << iter->second.helpstr << endl;
 		}
@@ -58,7 +58,7 @@ namespace Text_to_CAENVME_Calls {
 		printf("Got arguments:\n%s\n", arguments);
 		sscanf (arguments, "%x", &address);
 		printf("Got address:\n%x\n", address);
-		caen_api_return_value = CAENVME_ReadCycle( bridge_handler, address, &value, cvA32_U_DATA, cvD16 );
+		caen_api_return_value = CAENVME_ReadCycle( *bridge_handler, address, &value, cvA32_U_DATA, cvD16 );
 		printf("Read value:\n%x\n", value);
 		return caen_api_return_value;
 	}
@@ -68,8 +68,8 @@ namespace Text_to_CAENVME_Calls {
 		// parse string, call CAENVMElib function
 		CAENVME_API caen_api_return_value;
 		char FWRel[64];
-		printf("Reading firmware release from device:\n(handle ID) %d\n", bridge_handler);
-		caen_api_return_value = CAENVME_BoardFWRelease(bridge_handler, FWRel);
+		printf("Reading firmware release from device:\n(handle ID) %d\n", *bridge_handler);
+		caen_api_return_value = CAENVME_BoardFWRelease(*bridge_handler, FWRel);
 		printf("Read value:\n%s\n", FWRel);
 		return caen_api_return_value;
 	}
