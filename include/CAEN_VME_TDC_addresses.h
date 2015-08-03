@@ -1,3 +1,5 @@
+#ifndef Addresses_h
+#define Addresses_h
 
 typedef enum {
 
@@ -38,3 +40,4 @@ typedef enum {
     
   } mod_reg;
 
+#endif
