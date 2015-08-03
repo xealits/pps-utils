@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
         bridge_handle = bridge->GetHandle();
         printf("Initialized the VME Bridge at handle ID: %08x\n", bridge_handle);
 
-        CAENVME_plain_text_control text_to_CAENVME_call = new CAENVME_plain_text_control(bridge_handle);
+        CAENVME_plain_text_control * text_to_CAENVME_call = new CAENVME_plain_text_control(bridge_handle);
         //CAENVME_plain_text_control text_to_CAENVME_call( bridge_handle );
         //Text_to_CAENVME_Calls::bridge_handle = bridge_handle;
 
@@ -67,23 +67,23 @@ int main(int argc, char *argv[]) {
             // scanf ("%63s", input);
             if ( strcmp(input, "quit") == 0) { delete bridge; return 0; }
             else if ( strcmp(input, "help") == 0 ) {
-                text_to_CAENVME_call.print_vme_text_protocol_help();
+                text_to_CAENVME_call->print_vme_text_protocol_help();
                 // Text_to_CAENVME_Calls::print_vme_text_protocol_help(text_to_calls_map);
             }
             else if ( strcmp(input, "") == 0 ) { ; }
-            else { //text_to_CAENVME_call.process_text_command( input ); }
+            else { //text_to_CAENVME_call->process_text_command( input ); }
                 char * pch; // pure C comming in!
                 pch = strtok(input, " "); // blank space is the only delimeter in out case
                 // pch now points to the first token of the call,
                 // it has to be a call name
-                text_to_CAENVME_call.parse_and_call(pch, strtok(NULL, ""));
+                text_to_CAENVME_call->parse_and_call(pch, strtok(NULL, ""));
 /*                if ( text_to_calls_map.find(pch) == text_to_calls_map.end() ) {
                     // not found
                     printf("The call is not known.\n");
                 }
                 else {
                     // found
-                    text_to_CAENVME_call.parse_and_call(pch, strtok(NULL, ""));
+                    text_to_CAENVME_call->parse_and_call(pch, strtok(NULL, ""));
                     // text_to_calls_map[pch].parse_and_call( bridge_handle, strtok(NULL, "") );
                 }*/
             }

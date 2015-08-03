@@ -62,9 +62,8 @@ CAENVME_plain_text_control::CAENVME_plain_text_control(int32_t handler)
 
 CAENVME_API CAENVME_plain_text_control::parse_and_call(char* commandname, char* arguments)
 	{
-		if ( strcmp(commandname, "read_cycle") == 0) { read_cycle(arguments); }
-		else if ( strcmp(commandname, "read_bridge_fw") == 0 ) { read_bridge_fw(arguments); }
-		else if ( strcmp(commandname, "read_bridge_fw") == 0 ) { read_bridge_fw(arguments); }
+		if ( strcmp(commandname, "read_cycle") == 0) { return read_cycle(arguments); }
+		else if ( strcmp(commandname, "read_bridge_fw") == 0 ) { return read_bridge_fw(arguments); }
 		else printf("The call is not known.\n");
 	}
 
