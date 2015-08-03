@@ -49,7 +49,8 @@ else{
     // the program handles one bridge -- the values are global to whole program
     bridge = new VME::BridgeVx718(bridge_device_filename, VME::CAEN_V2718);
     bridge_handle = bridge->GetHandle();
-    printf("Initialized the VME Bridge at handle ID: %08x\n", bridge_handle);
+    * Text_to_CAENVME_Calls::bridge_handler = bridge_handle;
+    printf("Initialized the VME Bridge at handle ID: %08x\n", * Text_to_CAENVME_Calls::bridge_handler);
     //CAENVME_plain_text_control text_to_CAENVME_call( bridge_handle );
     //Text_to_CAENVME_Calls::bridge_handle = bridge_handle;
 
@@ -78,7 +79,7 @@ else{
 			printf("The call is not known.\n");
 		} else {
 			// found
-			text_to_calls_map[pch].parse_and_call( bridge_handle, strtok(NULL, "") );
+			text_to_calls_map[pch].parse_and_call( strtok(NULL, "") );
 		}
 	}
          printf (prompt);
