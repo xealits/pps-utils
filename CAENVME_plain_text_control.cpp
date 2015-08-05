@@ -5,7 +5,7 @@
 #include <string.h> // strtok,
 #include <stdint.h> // standard integers: uint16_t etc
 
-using namespace std;
+using namespace std; // sscanf
 
 
 namespace Text_to_CAENVME_Calls {
@@ -150,7 +150,7 @@ namespace Text_to_CAENVME_Calls {
 		int count = 0;
 
 		printf("Reading block @ %x address on VME of the size %x bytes\n(bridge handle ID = %d)\n", address, size, *bridge_handler);
-		caen_api_return_value = CAENVME_BLTReadCycle( *bridge_handler, address, block_buffer, size, cvA32_U_DATA, cvD32, &count );
+		caen_api_return_value = CAENVME_BLTReadCycle( *bridge_handler, address, block_buffer, size, cvA32_U_BLT, cvD32, &count );
 		printf("Block read. %d bytes transfered\n", count);
 
 		// for now, with -- cvD32 -- let's output to stdout four-byte lines
