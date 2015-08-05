@@ -166,24 +166,37 @@ namespace Text_to_CAENVME_Calls {
 	map<string, CAENlib_VME_Call>  create_text_to_CAENlib_map( void ) {
 		map<string, CAENlib_VME_Call> m;
 
-		m["read_cycle"] = (CAENlib_VME_Call) {parse_and_call_CAENVME_ReadCycle,
-			(VMECall_help_record) { "read_cycle", "<VME address 0x>", "Performs a single VME read cycle.\nPrints the result.\n"}
+		m["read_cycle"] = (CAENlib_VME_Call) { parse_and_call_CAENVME_ReadCycle,
+			(VMECall_help_record) { "read_cycle",
+			                        "<VME address 0x>",
+			                        "Performs a single VME read cycle.\nPrints the result.\n"}
 		};
 
-		m["read_bridge_fw"] = (CAENlib_VME_Call) {parse_and_call_CAENVME_BoardFWRelease,
-			(VMECall_help_record) { "read_bridge_fw", "", "Permits to read the firmware release loaded into the device.\nPrints FW release.\n"}
+		m["read_bridge_fw"] = (CAENlib_VME_Call) { parse_and_call_CAENVME_BoardFWRelease,
+			(VMECall_help_record) { "read_bridge_fw",
+			                        "",
+			                        "Permits to read the firmware release loaded into the device.\n"
+			                        "Prints FW release.\n"}
 		};
 
-		m["write_bridge_register"] = (CAENlib_VME_Call) {parse_and_call_CAENVME_WriteRegister,
-			(VMECall_help_record) { "write_bridge_register", "<Bridge Register Address 0x> <New Value 0x>", "Writes the new value to the register at the given address on the Bridge device.\n"}
+		m["write_bridge_register"] = (CAENlib_VME_Call) { parse_and_call_CAENVME_WriteRegister,
+			(VMECall_help_record) { "write_bridge_register",
+			                        "<Bridge Register Address 0x> <New Value 0x>",
+			                        "Writes the new value to the register at the given address on the Bridge device.\n"}
 		};
 
-		m["write_cycle"] = (CAENlib_VME_Call) {parse_and_call_CAENVME_WriteCycle,
-			(VMECall_help_record) { "write_cycle", "<VME Address 0x> <New Value 0x>", "Writes the new value to the register at the given address on VME.\n"}
+		m["write_cycle"] = (CAENlib_VME_Call) { parse_and_call_CAENVME_WriteCycle,
+			(VMECall_help_record) { "write_cycle",
+			                        "<VME Address 0x> <New Value 0x>",
+			                        "Writes the new value to the register at the given address on VME.\n"}
 		};
 
 		m["read_block_cycle"] = (CAENlib_VME_Call) {parse_and_call_CAENVME_BLTReadCycle,
-			(VMECall_help_record) { "read_block_cycle", "<VME Address 0x> <Number of Bytes to read 0d>", "The function performs a VME block transfer read cycle. It can be used to perform MBLT transfers using 64 bit data width.\n(works only with 32 bit width buffers)\n(output goes to stdout)\n"}
+			(VMECall_help_record) { "read_block_cycle",
+			                        "<VME Address 0x> <Number of Bytes to read 0d>",
+			                        "The function performs a VME block transfer read cycle."
+			                        "It can be used to perform MBLT transfers using 64 bit data width.\n"
+			                        "(works only with 32 bit width buffers)\n(output goes to stdout)\n"}
 		};
 
 	return m;
