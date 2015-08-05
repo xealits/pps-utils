@@ -34,7 +34,7 @@ if (argc!=2){
      printf("One argument is required -- VME bridge device filename.\n");
      return 1;
     }
-else{
+else {
     //uint16_t register_address = atoi(argv[1]);
     char bridge_device_filename[100];
     sscanf(argv[1], "%s", bridge_device_filename);
@@ -69,7 +69,7 @@ else{
 		Text_to_CAENVME_Calls::print_vme_text_protocol_help(text_to_calls_map);
 	 }
          else if ( strcmp(input, "") == 0 ) { ; }
-         else { //text_to_CAENVME_call.process_text_command( input ); }
+	else { //text_to_CAENVME_call.process_text_command( input ); }
 		char * pch; // pure C comming in!
 		pch = strtok(input, " "); // blank space is the only delimeter in out case
 		// pch now points to the first token of the call,
@@ -82,11 +82,11 @@ else{
 			text_to_calls_map[pch].parse_and_call( strtok(NULL, "") );
 		}
 	}
-         printf (prompt);
-    }
+	printf (prompt);
+    };
 
     delete bridge;
-    }
+}
 
 }
 

@@ -94,15 +94,17 @@ namespace Text_to_CAENVME_Calls {
 		CAENVME_API caen_api_return_value;
 		uint32_t address; // TODO CVRegisters !
 		unsigned short value;// uint16_t value; // TODO unsigned short
+		CVRegisters reg_address;
 
 		// parse register address and input value
 		char * pch;
 		pch = strtok(arguments, " "); // blank space is the only delimeter in out case
 		sscanf (pch, "%x", &address);
+		reg_address = static_cast<CVRegisters>( address ); // uint32_t to enum
 		sscanf (strtok(NULL, " "), "%x", &value);
 
 		printf("Writing %x to register @ %x of the bridge device, handle ID = %d\n", value, address, *bridge_handler);
-		caen_api_return_value = CAENVME_WriteRegister(*bridge_handler, address, value);
+		caen_api_return_value = CAENVME_WriteRegister(*bridge_handler, reg_address, value);
 		printf("Done\n");
 		return caen_api_return_value;
 	}
@@ -120,7 +122,7 @@ namespace Text_to_CAENVME_Calls {
 		sscanf (strtok(NULL, " "), "%x", &value);
 
 		printf("Writing %x to address %x on VME\n(bridge handle ID = %d)\n", value, address, *bridge_handler);
-		caen_api_return_value = CAENVME_WriteCycle( *bridge_handle, address, &value, cvA32_U_DATA, cvD16);
+		caen_api_return_value = CAENVME_WriteCycle( *bridge_handler, address, &value, cvA32_U_DATA, cvD16);
 		printf("Done\n");
 		return caen_api_return_value;
 	}
@@ -141,7 +143,7 @@ namespace Text_to_CAENVME_Calls {
 		sscanf (pch, "%x", &address);
 		sscanf (strtok(NULL, " "), "%d", &size);
 
-		unsigned char * block_buffer;
+		char * block_buffer;
 		block_buffer = (char*)malloc(size); // size bytes in the buffer
 		// memset(block_buffer, 0, sizeof(uint32_t));
 		int block_size = size;
@@ -170,6 +172,7 @@ namespace Text_to_CAENVME_Calls {
 
 		m["read_bridge_fw"] = (CAENlib_VME_Call) {parse_and_call_CAENVME_BoardFWRelease,
 			(VMECall_help_record) { "read_bridge_fw", "", "Permits to read the firmware release loaded into the device.\nPrints FW release.\n"}
+		};
 
 		m["write_bridge_register"] = (CAENlib_VME_Call) {parse_and_call_CAENVME_WriteRegister,
 			(VMECall_help_record) { "write_bridge_register", "<Bridge Register Address 0x> <New Value 0x>", "Writes the new value to the register at the given address on the Bridge device.\n"}
