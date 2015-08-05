@@ -2,7 +2,8 @@
 #include "CAENVMEoslib.h"
 #include "CAENVMEtypes.h"
 
-#include <string.h>
+#include <string.h> // strtok,
+#include <stdint.h> // standard integers: uint16_t etc
 
 using namespace std;
 
@@ -63,6 +64,16 @@ namespace Text_to_CAENVME_Calls {
 	}
 */
 
+	CAENVME_API parse_and_call_CAENVME_BoardFWRelease( char* arguments ){
+		// parse string, call CAENVMElib function
+		CAENVME_API caen_api_return_value;
+		char FWRel[64];
+		printf("Reading firmware release from device:\n(handle ID) %d\n", *bridge_handler);
+		caen_api_return_value = CAENVME_BoardFWRelease(*bridge_handler, FWRel);
+		printf("Read value:\n%s\n", FWRel);
+		return caen_api_return_value;
+	}
+
 	CAENVME_API parse_and_call_CAENVME_ReadCycle( char* arguments ){
 		// parse string, call CAENVMElib function
 		CAENVME_API caen_api_return_value;
@@ -77,25 +88,101 @@ namespace Text_to_CAENVME_Calls {
 	}
 
 
-	CAENVME_API parse_and_call_CAENVME_BoardFWRelease( char* arguments ){
+
+	CAENVME_API parse_and_call_CAENVME_WriteRegister( char* arguments ){
 		// parse string, call CAENVMElib function
 		CAENVME_API caen_api_return_value;
-		char FWRel[64];
-		printf("Reading firmware release from device:\n(handle ID) %d\n", *bridge_handler);
-		caen_api_return_value = CAENVME_BoardFWRelease(*bridge_handler, FWRel);
-		printf("Read value:\n%s\n", FWRel);
+		uint32_t address; // TODO CVRegisters !
+		unsigned short value;// uint16_t value; // TODO unsigned short
+
+		// parse register address and input value
+		char * pch;
+		pch = strtok(arguments, " "); // blank space is the only delimeter in out case
+		sscanf (pch, "%x", &address);
+		sscanf (strtok(NULL, " "), "%x", &value);
+
+		printf("Writing %x to register @ %x of the bridge device, handle ID = %d\n", value, address, *bridge_handler);
+		caen_api_return_value = CAENVME_WriteRegister(*bridge_handler, address, value);
+		printf("Done\n");
+		return caen_api_return_value;
+	}
+
+	CAENVME_API parse_and_call_CAENVME_WriteCycle( char* arguments ){
+		// parse string, call CAENVMElib function
+		CAENVME_API caen_api_return_value;
+		uint32_t address;
+		uint16_t value;
+
+		// parse register address and input value
+		char * pch;
+		pch = strtok(arguments, " "); // blank space is the only delimeter in out case
+		sscanf (pch, "%x", &address);
+		sscanf (strtok(NULL, " "), "%x", &value);
+
+		printf("Writing %x to address %x on VME\n(bridge handle ID = %d)\n", value, address, *bridge_handler);
+		caen_api_return_value = CAENVME_WriteCycle( *bridge_handle, address, &value, cvA32_U_DATA, cvD16);
+		printf("Done\n");
+		return caen_api_return_value;
+	}
+
+
+	CAENVME_API parse_and_call_CAENVME_BLTReadCycle( char* arguments ){
+		// parse string, call CAENVMElib function
+		CAENVME_API caen_api_return_value;
+		uint32_t address;
+		int size;
+		// printf("Got arguments:\n%s\n", arguments);
+		// sscanf (arguments, "%x", &address);
+		// printf("Got address:\n%x\n", address);
+
+		// parse address and the size of block
+		char * pch;
+		pch = strtok(arguments, " "); // blank space is the only delimeter in out case
+		sscanf (pch, "%x", &address);
+		sscanf (strtok(NULL, " "), "%d", &size);
+
+		unsigned char * block_buffer;
+		block_buffer = (char*)malloc(size); // size bytes in the buffer
+		// memset(block_buffer, 0, sizeof(uint32_t));
+		int block_size = size;
+		int count = 0;
+
+		printf("Reading block @ %x address on VME of the size %x bytes\n(bridge handle ID = %d)\n", address, size, *bridge_handler);
+		caen_api_return_value = CAENVME_BLTReadCycle( *bridge_handler, address, block_buffer, size, cvA32_U_DATA, cvD32, &count );
+		printf("Block read. %d bytes transfered\n", count);
+
+		// for now, with -- cvD32 -- let's output to stdout four-byte lines
+		for (int i = 0; i < count; ++i)
+		{
+			printf("%x%x%x%x\n", block_buffer[i++], block_buffer[i++], block_buffer[i++], block_buffer[i]);
+		}
+
 		return caen_api_return_value;
 	}
 
 
 	map<string, CAENlib_VME_Call>  create_text_to_CAENlib_map( void ) {
 		map<string, CAENlib_VME_Call> m;
+
 		m["read_cycle"] = (CAENlib_VME_Call) {parse_and_call_CAENVME_ReadCycle,
-			(VMECall_help_record) { "read_cycle", "<VME address>", "Performs a single VME read cycle.\nPrints the result.\n"}
+			(VMECall_help_record) { "read_cycle", "<VME address 0x>", "Performs a single VME read cycle.\nPrints the result.\n"}
 		};
+
 		m["read_bridge_fw"] = (CAENlib_VME_Call) {parse_and_call_CAENVME_BoardFWRelease,
 			(VMECall_help_record) { "read_bridge_fw", "", "Permits to read the firmware release loaded into the device.\nPrints FW release.\n"}
+
+		m["write_bridge_register"] = (CAENlib_VME_Call) {parse_and_call_CAENVME_WriteRegister,
+			(VMECall_help_record) { "write_bridge_register", "<Bridge Register Address 0x> <New Value 0x>", "Writes the new value to the register at the given address on the Bridge device.\n"}
 		};
+
+		m["write_cycle"] = (CAENlib_VME_Call) {parse_and_call_CAENVME_WriteCycle,
+			(VMECall_help_record) { "write_cycle", "<VME Address 0x> <New Value 0x>", "Writes the new value to the register at the given address on VME.\n"}
+		};
+
+		m["read_block_cycle"] = (CAENlib_VME_Call) {parse_and_call_CAENVME_BLTReadCycle,
+			(VMECall_help_record) { "read_block_cycle", "<VME Address 0x> <Number of Bytes to read 0d>", "The function performs a VME block transfer read cycle. It can be used to perform MBLT transfers using 64 bit data width.\n(works only with 32 bit width buffers)\n(output goes to stdout)\n"}
+		};
+
 	return m;
 	}
 

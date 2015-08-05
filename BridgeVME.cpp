@@ -1,7 +1,7 @@
 #include <stdio.h>
-#include <stdint.h>
+//#include <stdint.h> // standard integers: uint16_t etc
 #include <stdlib.h>
-#include <string.h>
+#include <string.h> // strtok,
 //#include <map>
 //#include <std.h>
 using namespace std;
