@@ -78,16 +78,19 @@ namespace Text_to_CAENVME_Calls {
 		return caen_api_return_value;
 	}
 
+
+
 	CAENVME_API parse_and_call_CAENVME_ReadCycle( char* arguments ){
 		// parse string, call CAENVMElib function
 		CAENVME_API caen_api_return_value;
 		uint32_t address;
-		uint16_t value;
-		printf("Got arguments:\n%s\n", arguments);
+		// uint16_t value;
+		char bytes_to_read[2]; // 16 bits
+		// printf("Got arguments:\n%s\n", arguments);
 		sscanf (arguments, "%x", &address);
-		printf("Got address:\n%x\n", address);
-		caen_api_return_value = CAENVME_ReadCycle( bridge_handler, address, &value, cvA32_U_DATA, cvD16 );
-		printf("Read value:\n%x\n", value);
+		printf("Reading address: %x\n", address);
+		caen_api_return_value = CAENVME_ReadCycle( bridge_handler, address, bytes_to_read, cvA32_U_DATA, cvD16 );
+		printf("Read value: %02x%02x\n", bytes_to_read[1], bytes_to_read[0]);
 		return caen_api_return_value;
 	}
 
@@ -113,6 +116,8 @@ namespace Text_to_CAENVME_Calls {
 		return caen_api_return_value;
 	}
 
+
+
 	CAENVME_API parse_and_call_CAENVME_WriteCycle( char* arguments ){
 		// parse string, call CAENVMElib function
 		CAENVME_API caen_api_return_value;
@@ -130,6 +135,7 @@ namespace Text_to_CAENVME_Calls {
 		printf("Done\n");
 		return caen_api_return_value;
 	}
+
 
 
 	CAENVME_API parse_and_call_CAENVME_BLTReadCycle( char* arguments ){
