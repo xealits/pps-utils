@@ -8,7 +8,8 @@ vpath %.c src
 vpath %.h include
 
 # to pass the include directory to gcc
-CFLAGS = -I include -std=c99
+#CFLAGS = -I include -std=c99
+CFLAGS = -I include -std=gnu99
 
 # default target, C startup process for PipeHub
 #gcc pipe-hub.c PipeHub.o CAENVMECalls.o -o pipe-hub
