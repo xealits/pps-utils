@@ -42,6 +42,8 @@ FILE *fin_keeper;
 
 FILE *fout;
 int dout; // descriptor of out
+FILE *fout_keeper;
+
 FILE *fsts;
 int dsts;
 FILE *ferr;
@@ -132,6 +134,8 @@ int main(int argc, char *argv[])
 				perror( fifo_open_error_report );
 				exit(1);
 			}
+			fout_keeper = fopen(argv[2], "r");
+			fprintf(stdout, "1NFO: a keeper reader is set for output stream,\n");
 			fprintf(stdout, "1NFO: the OUTput pipe %s is opened,\n", argv[2]);
 		}
 		else {
@@ -170,6 +174,8 @@ int main(int argc, char *argv[])
 			fprintf(stdout, "1NFO: the OUTput pipe %s is opened,\n", argv[2]);
 			fin_keeper = fopen(argv[1], "w");
 			fprintf(stdout, "1NFO: a keeper writer is set for input stream,\n");
+			fout_keeper = fopen(argv[2], "r");
+			fprintf(stdout, "1NFO: a keeper reader is set for output stream,\n");
 		}
 
 	}
