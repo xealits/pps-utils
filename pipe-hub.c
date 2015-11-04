@@ -26,6 +26,8 @@
 
 #include <string.h> // strlen, strcmp
 #include <signal.h> // signal and SIGNINT
+#include <fcntl.h> // O_WRONLY, O_NONBLOCK
+
 
 // #include <include/PipeHub.h>
 #include <PipeHub.h>
@@ -38,10 +40,15 @@ FILE *fin;
 FILE *fin_keeper;
 
 FILE *fout;
+int dout; // descriptor of out
 FILE *fsts;
+int dsts;
 FILE *ferr;
+int derr;
 
 
+
+// TODO: handle SIGINT?
 //void termination_handler( int signum );
 
 
@@ -82,6 +89,8 @@ int main(int argc, char *argv[])
 	}
 	fprintf(fsts, "<--\n");
 
+	char fifo_open_error_report[80];
+
 	if (argc == 1) {
 		fprintf(fsts, "INFO: going into stdin-stdout setup,\n");
 		fin  = stdin;
@@ -90,7 +99,6 @@ int main(int argc, char *argv[])
 	else if (argc == 2) {// TODO: add a check for --help, -h argument
 		fprintf(fsts, "INFO: going into pipe-stdout setup,\n");
 		if( (fin = fopen(argv[1], "r")) == NULL ) {
-			char fifo_open_error_report[80];
 			sprintf( fifo_open_error_report, "fopen %s", argv[1] );
 			perror( fifo_open_error_report );
 			exit(1);
@@ -104,17 +112,24 @@ int main(int argc, char *argv[])
 		if ( strcmp(argv[1], "-") == 0 ) {
 			fprintf(fsts, "INFO: going into stdin-pipe setup,\n");
 			fin = stdin;
-			if( (fout = fopen(argv[2], "w")) == NULL ) {
-				char fifo_open_error_report[80];
-				sprintf( fifo_open_error_report, "fopen %s", argv[2] );
+			fprintf(fsts, "INFO: going open pipe (write) and wait until it is opened from other side,\n");
+			// if( (fout = fopen(argv[2], "w")) == NULL ) {
+			// if ( (dout = open(argv[2], O_WRONLY | O_NONBLOCK)) < 0 ) {
+			if ( (dout = open(argv[2], O_WRONLY)) < 0 ) {
+				fprintf( stdout, "open %s = %d", argv[2], dout );
+				exit(1);
+			}
+			// fprintf( stdout, "open %s file-descr = %d", argv[2], dout );
+			if( (fout = fdopen(dout, "w")) == NULL ) {
+				sprintf( fifo_open_error_report, "fdopen %d (file-descr)", dout );
 				perror( fifo_open_error_report );
 				exit(1);
 			}
 		}
 		else {
 			fprintf(fsts, "INFO: going into pipe-pipe setup,\n");
+			fprintf(fsts, "INFO: going open pipes (read-write) and wait until they are opened from other side,\n");
 			if( (fin = fopen(argv[1], "r")) == NULL ) {
-				char fifo_open_error_report[80];
 				sprintf( fifo_open_error_report, "fopen %s", argv[1] );
 				perror( fifo_open_error_report );
 				exit(1);
@@ -122,9 +137,12 @@ int main(int argc, char *argv[])
 			// add a dummy keeper strem if the input is external
 			fin_keeper = fopen(argv[1], "w");
 			fprintf(fsts, "INFO: a keeper writer is set for input stream,\n");
-			if( (fout = fopen(argv[2], "w")) == NULL ) {
-				char fifo_open_error_report[80];
-				sprintf( fifo_open_error_report, "fopen %s", argv[2] );
+			if ( (dout = open(argv[2], O_WRONLY)) < 0 ) {
+				fprintf( stdout, "open %s = %d", argv[2], dout );
+				exit(1);
+			}
+			if( (fout = fdopen(dout, "w")) == NULL ) {
+				sprintf( fifo_open_error_report, "fdopen %s", argv[2] );
 				perror( fifo_open_error_report );
 				exit(1);
 			}
