@@ -17,15 +17,15 @@
  if PipeHub is compiled as a shared library..
  *****************************************************************************/
 
-#include <stdio.h> // FILE, fprintf
+#include <stdio.h> // FILE, fprintf, fdopen
 #include <stdlib.h>
-#include <sys/stat.h>
-#include <unistd.h>
+// #include <sys/stat.h>
+// #include <unistd.h>
 
-#include <linux/stat.h>
+// #include <linux/stat.h>
 
 #include <string.h> // strlen, strcmp
-#include <signal.h> // signal and SIGNINT
+// #include <signal.h> // signal and SIGNINT
 #include <fcntl.h> // O_WRONLY, O_NONBLOCK
 
 
@@ -37,6 +37,7 @@
 #define BUFF_SIZE 80
 
 FILE *fin;
+int din; // descriptor of in
 FILE *fin_keeper;
 
 FILE *fout;
@@ -94,7 +95,9 @@ int main(int argc, char *argv[])
 	if (argc == 1) {
 		fprintf(stdout, "1NFO: going into stdin-stdout setup,\n");
 		fin  = stdin;
+		fprintf(stdout, "1NFO: the INput stream %s is set to stdin,\n", argv[1]);
 		fout = stdout;
+		fprintf(stdout, "1NFO: the OUTput stream %s is set to stdout,\n", argv[2]);
 	}
 	else if (argc == 2) {// TODO: add a check for --help, -h argument
 		fprintf(stdout, "1NFO: going into pipe-stdout setup,\n");
@@ -103,49 +106,70 @@ int main(int argc, char *argv[])
 			perror( fifo_open_error_report );
 			exit(1);
 		}
+		fprintf(stdout, "1NFO: the INput pipe %s is opened,\n", argv[1]);
 		// add a dummy keeper strem if the input is external
 		fin_keeper = fopen(argv[1], "w");
 		fprintf(stdout, "1NFO: a keeper writer is set for input stream,\n");
 		fout = stdout;
+		fprintf(stdout, "1NFO: the OUTput stream %s is set to stdout,\n", argv[2]);
 	}
 	else if (argc == 3) {
 		if ( strcmp(argv[1], "-") == 0 ) {
 			fprintf(stdout, "1NFO: going into stdin-pipe setup,\n");
 			fin = stdin;
+			fprintf(stdout, "1NFO: the INput stream %s is set to stdin,\n", argv[1]);
 			fprintf(stdout, "1NFO: going open pipe (write) and wait until it is opened from other side,\n");
 			// if( (fout = fopen(argv[2], "w")) == NULL ) {
 			// if ( (dout = open(argv[2], O_WRONLY | O_NONBLOCK)) < 0 ) {
-			if ( (dout = open(argv[2], O_WRONLY)) < 0 ) {
+			if ( (dout = open(argv[2], O_WRONLY & (~O_NONBLOCK))) < 0 ) {
+			// if ( (dout = open(argv[2], O_WRONLY )) < 0 ) {
 				fprintf( stdout, "open %s = %d", argv[2], dout );
 				exit(1);
 			}
 			// fprintf( stdout, "open %s file-descr = %d", argv[2], dout );
-			if( (fout = fdopen(dout, "w")) == NULL ) {
+			if( (fout = (FILE*) fdopen(dout, "w")) == NULL ) {
 				sprintf( fifo_open_error_report, "fdopen %d (file-descr)", dout );
 				perror( fifo_open_error_report );
 				exit(1);
 			}
+			fprintf(stdout, "1NFO: the OUTput pipe %s is opened,\n", argv[2]);
 		}
 		else {
 			fprintf(stdout, "1NFO: going into pipe-pipe setup,\n");
 			fprintf(stdout, "1NFO: going open pipes (read-write) and wait until they are opened from other side,\n");
+			if ( (din = open(argv[1], O_RDONLY & (~O_NONBLOCK))) < 0 ) {
+				fprintf( stdout, "open %s = %d", argv[2], dout );
+				exit(1);
+			}
+			if( (fin = (FILE*) fdopen(din, "r")) == NULL ) {
+				sprintf( fifo_open_error_report, "fopen %s", argv[1] );
+				perror( fifo_open_error_report );
+				exit(1);
+			}
+			/*
 			if( (fin = fopen(argv[1], "r")) == NULL ) {
 				sprintf( fifo_open_error_report, "fopen %s", argv[1] );
 				perror( fifo_open_error_report );
 				exit(1);
 			}
+			*/
 			// add a dummy keeper strem if the input is external
-			fin_keeper = fopen(argv[1], "w");
-			fprintf(stdout, "1NFO: a keeper writer is set for input stream,\n");
-			if ( (dout = open(argv[2], O_WRONLY &  ~O_NONBLOCK)) < 0 ) {
+			fprintf(stdout, "1NFO: the INput pipe %s is opened,\n", argv[1]);
+			int _open_flag_write_and_blocking = O_WRONLY & (~O_NONBLOCK);
+			// int _open_flag_write = O_WRONLY;
+			// if ( (dout = open(argv[2],  O_WRONLY )) < 0 ) {
+			if ( (dout = open(argv[2], O_WRONLY & (~O_NONBLOCK))) < 0 ) {
 				fprintf( stdout, "open %s = %d", argv[2], dout );
 				exit(1);
 			}
-			if( (fout = fdopen(dout, "w")) == NULL ) {
+			if( (fout = (FILE*) fdopen(dout, "w")) == NULL ) {
 				sprintf( fifo_open_error_report, "fdopen %s", argv[2] );
 				perror( fifo_open_error_report );
 				exit(1);
 			}
+			fprintf(stdout, "1NFO: the OUTput pipe %s is opened,\n", argv[2]);
+			fin_keeper = fopen(argv[1], "w");
+			fprintf(stdout, "1NFO: a keeper writer is set for input stream,\n");
 		}
 
 	}
