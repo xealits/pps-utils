@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 	*/
 	setvbuf(fsts, NULL, _IONBF, BUFF_SIZE);
 	setvbuf(ferr, NULL, _IONBF, BUFF_SIZE);
-	fprintf(fsts, "INFO: No buffering on status and error streams is set.\n");
+	fprintf(stdout, "1NFO: Status and Erros outputs are set to stdout.\n      No buffering on status and error streams is set.\n");
 
 	// char readbuf[FIFO_READLEN];
 
@@ -79,25 +79,25 @@ int main(int argc, char *argv[])
         //umask(0);
         //mknod(FIFO_FILE, S_IFIFO|0666, 0);
 
-	fprintf(fsts, "INFO: going to process the commandline options and setup I/O streams,\n");
+	fprintf(stdout, "1NFO: going to process the commandline options and setup I/O streams,\n");
 
-	fprintf(fsts, "INFO: got options: ");
-	fprintf(fsts, "--> ");
+	fprintf(stdout, "1NFO: got options: ");
+	fprintf(stdout, "--> ");
 	for (int i = 1; i < argc; ++i)
 	{
-		fprintf(fsts, "%s ", argv[i]);
+		fprintf(stdout, "%s ", argv[i]);
 	}
-	fprintf(fsts, "<--\n");
+	fprintf(stdout, "<--\n");
 
 	char fifo_open_error_report[80];
 
 	if (argc == 1) {
-		fprintf(fsts, "INFO: going into stdin-stdout setup,\n");
+		fprintf(stdout, "1NFO: going into stdin-stdout setup,\n");
 		fin  = stdin;
 		fout = stdout;
 	}
 	else if (argc == 2) {// TODO: add a check for --help, -h argument
-		fprintf(fsts, "INFO: going into pipe-stdout setup,\n");
+		fprintf(stdout, "1NFO: going into pipe-stdout setup,\n");
 		if( (fin = fopen(argv[1], "r")) == NULL ) {
 			sprintf( fifo_open_error_report, "fopen %s", argv[1] );
 			perror( fifo_open_error_report );
@@ -105,14 +105,14 @@ int main(int argc, char *argv[])
 		}
 		// add a dummy keeper strem if the input is external
 		fin_keeper = fopen(argv[1], "w");
-		fprintf(fsts, "INFO: a keeper writer is set for input stream,\n");
+		fprintf(stdout, "1NFO: a keeper writer is set for input stream,\n");
 		fout = stdout;
 	}
 	else if (argc == 3) {
 		if ( strcmp(argv[1], "-") == 0 ) {
-			fprintf(fsts, "INFO: going into stdin-pipe setup,\n");
+			fprintf(stdout, "1NFO: going into stdin-pipe setup,\n");
 			fin = stdin;
-			fprintf(fsts, "INFO: going open pipe (write) and wait until it is opened from other side,\n");
+			fprintf(stdout, "1NFO: going open pipe (write) and wait until it is opened from other side,\n");
 			// if( (fout = fopen(argv[2], "w")) == NULL ) {
 			// if ( (dout = open(argv[2], O_WRONLY | O_NONBLOCK)) < 0 ) {
 			if ( (dout = open(argv[2], O_WRONLY)) < 0 ) {
@@ -127,8 +127,8 @@ int main(int argc, char *argv[])
 			}
 		}
 		else {
-			fprintf(fsts, "INFO: going into pipe-pipe setup,\n");
-			fprintf(fsts, "INFO: going open pipes (read-write) and wait until they are opened from other side,\n");
+			fprintf(stdout, "1NFO: going into pipe-pipe setup,\n");
+			fprintf(stdout, "1NFO: going open pipes (read-write) and wait until they are opened from other side,\n");
 			if( (fin = fopen(argv[1], "r")) == NULL ) {
 				sprintf( fifo_open_error_report, "fopen %s", argv[1] );
 				perror( fifo_open_error_report );
@@ -136,8 +136,8 @@ int main(int argc, char *argv[])
 			}
 			// add a dummy keeper strem if the input is external
 			fin_keeper = fopen(argv[1], "w");
-			fprintf(fsts, "INFO: a keeper writer is set for input stream,\n");
-			if ( (dout = open(argv[2], O_WRONLY)) < 0 ) {
+			fprintf(stdout, "1NFO: a keeper writer is set for input stream,\n");
+			if ( (dout = open(argv[2], O_WRONLY &  ~O_NONBLOCK)) < 0 ) {
 				fprintf( stdout, "open %s = %d", argv[2], dout );
 				exit(1);
 			}
