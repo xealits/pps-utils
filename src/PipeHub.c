@@ -7,7 +7,7 @@
  forked by xealits
  *****************************************************************************/
 
-#include <stdio.h> // FILE, fprintf
+#include <stdio.h> // FILE, fprintf, sscanf
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -21,7 +21,9 @@
 // #include <../include/CAENVMECalls.h>
 #include <CAENVMECalls.h>
 //#define FIFO_FILE       "pipe"
-#define FIFO_READLEN 256
+#define FIFO_READLEN 258
+// TODO: don't know how to use C macro in the subspecifier of format string
+// #define FIRST_WORD_READLEN 33 // should be less than FIFO_READLEN
 //#define BUFF_SIZE 80
 
 /*
@@ -44,6 +46,9 @@ void PipeHub( FILE * fin, FILE * fsts, FILE * fout, FILE * ferr )
 {
 
 	char readbuf[FIFO_READLEN];
+	// char command_word[FIRST_WORD_READLEN];
+	char command_word[33]; // should be less than FIFO_READLEN
+	char rest_of_input[FIFO_READLEN-33]; // should be less than FIFO_READLEN
 
 	char * vme_call_result;
 
@@ -70,27 +75,52 @@ void PipeHub( FILE * fin, FILE * fsts, FILE * fout, FILE * ferr )
 		// fprintf(fsts, "> ");
 		fgets(readbuf, FIFO_READLEN, fin);
 
-		if (is_blank(readbuf)) { continue; }
+		// if (is_blank(readbuf)) { continue; }
 
 		// if readbuf starts with set -- the command is intended for the PipeHub itself
 		// it should run some reconfiguration
 
 		// TODO: should one strip the trailing newline here? check for readbuffer overload?
 
+		if ( sscanf(readbuf, "%32s %[^\n]", command_word, rest_of_input) < 1 ) { continue; }
+		else {
+			if ( strcmp(command_word, "set") == 0 )
+			{
+				/* reset some config of the PipeHub */
+				fprintf(fsts, "INFO: Don't know how to reconfigure myself with %s yet.. Done.\n", rest_of_input);
+			}
+			else if ( strcmp(command_word, "awesome!") == 0 )
+			{
+				/* reset some config of the PipeHub */
+				fprintf(fsts, "INFO: I know!\n");
+			}
+			else {
+				// strip newline and forward the input string to CAEN calls
+				/*
+				if ( readbuf[strlen(readbuf)-1] == '\n' ) {
+					readbuf[strlen(readbuf)-1]='\0';
+					// fprintf(fsts, "INFO: Received string: %s\n", readbuf);
+					// fprintf(fout, "Received string: %s\n", readbuf);
+				}
+				*/
+				fprintf(fsts, "INFO: Calling VME with %s on %s,\n", command_word, rest_of_input);
+				vme_call_result = CAENVMECall( command_word, rest_of_input, fout, ferr );
+				fprintf(fsts, "INFO: the call result is %s.\n", vme_call_result);
+			}
+		}
+		/*
 		if ( readbuf[strlen(readbuf)-1] == '\n' ) {
 			readbuf[strlen(readbuf)-1]='\0';
 			fprintf(fsts, "INFO: Received string: %s\n", readbuf);
 			// fprintf(fout, "Received string: %s\n", readbuf);
 		}
 		else {
+			// fprintf(fsts, "INFO: Received string: %s⏎\n", readbuf);
 			fprintf(fsts, "INFO: Received string: %s...\n", readbuf);
 			// fprintf(fout, "Received string: %s...\n", readbuf);
 		}
+		*/
 
-		// here the input string is forwarded to CAEN calls
-		fprintf(fsts, "INFO: Calling VME with %s,\n", readbuf);
-		vme_call_result = CAENVMECall( readbuf, fout, ferr );
-		fprintf(fsts, "INFO: the call result is %s.\n", vme_call_result);
 
 		fprintf(fsts, "> ");
 	}

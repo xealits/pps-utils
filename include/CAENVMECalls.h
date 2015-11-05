@@ -7,6 +7,6 @@
 // stream_err   -- errors on the bus (TODO: or the CAEN lib?)
 // (VME bus gets the commands and outputs either data or error code -- each has its' own output stream)
 // output is a report string
-char * CAENVMECall( char * input_string, FILE * stream_out, FILE * stream_err );
+char * CAENVMECall( char * command_name, char * command_parameters, FILE * stream_out, FILE * stream_err );
 
 #endif
