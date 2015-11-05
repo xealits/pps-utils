@@ -9,7 +9,7 @@ vpath %.h include
 
 # to pass the include directory to gcc
 #CFLAGS = -I include -std=c99
-CFLAGS = -I include -std=gnu99
+CFLAGS = -I include -DLINUX -std=gnu99
 CFLAGS_CAEN = -lCAENVME -L/usr/lib/ -I /usr/include
 CFLAGS_TEST = -I include/test
 
