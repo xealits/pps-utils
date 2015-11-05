@@ -74,6 +74,8 @@ void PipeHub( PipeHub_Parameters * parameters)
 	// fprintf(fout, "TEST output: test-test!\n");
 	fprintf(fsts, "INFO: reading the input command -\n> ");
 
+	int compar_parse_count;
+
 	while(1)
 	{
 		// since there is dummy keeper for external inputs
@@ -89,19 +91,27 @@ void PipeHub( PipeHub_Parameters * parameters)
 
 		// TODO: should one strip the trailing newline here? check for readbuffer overload?
 
-		if ( sscanf(readbuf, "%32s %[^\n]", command_word, rest_of_input) < 1 ) { continue; }
+		if ( (compar_parse_count = sscanf(readbuf, "%32s %[^\n]", command_word, rest_of_input)) < 1 ) { continue; }
 		else {
 			if ( strcmp(command_word, "set") == 0 )
 			{
-				/* reset some config of the PipeHub */
-				fprintf(fsts, "INFO: Don't know how to reconfigure myself with %s yet.. Done.\n", rest_of_input);
+				if (compar_parse_count < 2)
+				{
+					fprintf(fsts, "INFO: Did not get the reconfig task.\n");
+				}
+				else
+				{
+					/* reset some config of the PipeHub */
+					fprintf(fsts, "INFO: Don't know how to reconfigure myself with %s yet.. Done.\n", rest_of_input);
+				}
 			}
 			else if ( strcmp(command_word, "awesome!") == 0 )
 			{
 				/* reset some config of the PipeHub */
 				fprintf(fsts, "INFO: I know!\n");
 			}
-			else {
+			else
+			{
 				// strip newline and forward the input string to CAEN calls
 				/*
 				if ( readbuf[strlen(readbuf)-1] == '\n' ) {
@@ -110,6 +120,10 @@ void PipeHub( PipeHub_Parameters * parameters)
 					// fprintf(fout, "Received string: %s\n", readbuf);
 				}
 				*/
+				if (compar_parse_count < 2)
+				{
+					rest_of_input[0] = '\0'; // set to empty string
+				}
 				fprintf(fsts, "INFO: Calling VME with %s on %s,\n", command_word, rest_of_input);
 				vme_call_result = CAENVMECall( command_word, rest_of_input, fout, ferr );
 				fprintf(fsts, "INFO: the call result is %s.\n", vme_call_result);

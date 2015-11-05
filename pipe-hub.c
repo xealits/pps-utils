@@ -104,9 +104,9 @@ int main(int argc, char *argv[])
 	if (argc == 1) {
 		fprintf(stdout, "1NFO: going into stdin-stdout setup,\n");
 		fin  = stdin;
-		fprintf(stdout, "1NFO: the INput stream %s is set to stdin,\n", argv[1]);
+		fprintf(stdout, "1NFO: the INput stream is set to stdin,\n");
 		fout = stdout;
-		fprintf(stdout, "1NFO: the OUTput stream %s is set to stdout,\n", argv[2]);
+		fprintf(stdout, "1NFO: the OUTput stream is set to stdout,\n");
 	}
 	else if (argc == 2) {// TODO: add a check for --help, -h argument
 		fprintf(stdout, "1NFO: going into pipe-stdout setup,\n");
@@ -120,13 +120,13 @@ int main(int argc, char *argv[])
 		fin_keeper = fopen(argv[1], "w");
 		fprintf(stdout, "1NFO: a keeper writer is set for input stream,\n");
 		fout = stdout;
-		fprintf(stdout, "1NFO: the OUTput stream %s is set to stdout,\n", argv[2]);
+		fprintf(stdout, "1NFO: the OUTput stream is set to stdout,\n");
 	}
 	else if (argc == 3) {
 		if ( strcmp(argv[1], "-") == 0 ) {
 			fprintf(stdout, "1NFO: going into stdin-pipe setup,\n");
 			fin = stdin;
-			fprintf(stdout, "1NFO: the INput stream %s is set to stdin,\n", argv[1]);
+			fprintf(stdout, "1NFO: the INput stream is set to stdin,\n");
 			fprintf(stdout, "1NFO: going open pipe (write) and wait until it is opened from other side,\n");
 			// if( (fout = fopen(argv[2], "w")) == NULL ) {
 			// if ( (dout = open(argv[2], O_WRONLY | O_NONBLOCK)) < 0 ) {
