@@ -32,6 +32,13 @@
 // #include <include/PipeHub.h>
 #include <PipeHub.h>
 
+// for init of the CAEN lib
+#include "CAENVMElib.h"
+#include "CAENVMEoslib.h"
+#include "CAENVMEtypes.h"
+#include "stdint.h" // int32_t etc, used as parameters in CAEN lib, for instance in init procedure
+
+
 //#define FIFO_FILE       "pipe"
 #define FIFO_READLEN 80
 #define BUFF_SIZE 80
@@ -62,8 +69,9 @@ int derr;
 int main(int argc, char *argv[])
 {
 	PipeHub_Parameters initial_parameters;
+	Status_Prompt_Levels prompt_level = all;
 
-	initial_parameters.status_prompt_level = all;
+	initial_parameters.status_prompt_level = & prompt_level;
 
 	fprintf(stdout, "1NFO: Starting the program, soon I/O will be set..\n");
 	//signal(SIGINT, termination_handler);
@@ -99,92 +107,123 @@ int main(int argc, char *argv[])
 	}
 	fprintf(stdout, "<--\n");
 
-	char fifo_open_error_report[80];
+	char error_report[80];
 
-	if (argc == 1) {
-		fprintf(stdout, "1NFO: going into stdin-stdout setup,\n");
-		fin  = stdin;
-		fprintf(stdout, "1NFO: the INput stream is set to stdin,\n");
-		fout = stdout;
-		fprintf(stdout, "1NFO: the OUTput stream is set to stdout,\n");
+	if ( argc < 2)
+	{
+		fprintf(stderr, "1NFO: Usage:\n$ pipe-hub <devname> [<instream>] [<outstream>]\n");
+		exit(1);
 	}
-	else if (argc == 2) {// TODO: add a check for --help, -h argument
-		fprintf(stdout, "1NFO: going into pipe-stdout setup,\n");
-		if( (fin = fopen(argv[1], "r")) == NULL ) {
-			sprintf( fifo_open_error_report, "fopen %s", argv[1] );
-			perror( fifo_open_error_report );
+	else {
+		// initialize VME_device_handler
+		// setup i/o streams
+        CVBoardTypes board_type;
+        board_type = cvV2718; // TODO: make it accessible
+        CVErrorCodes caen_lib_ret;
+        int dev = atoi(argv[1]);
+        // long dev_handle; // datasheet says long, header -- int32_t
+        int32_t dev_handle;
+        CAENVME_API ret;
+
+        ret = CAENVME_Init(board_type, 0x0, dev, &dev_handle);
+		if (ret!=cvSuccess) {
+			sprintf( error_report, "could not initialize CAENVME lib for %s device", argv[1] );
+			perror( error_report );
 			exit(1);
 		}
-		fprintf(stdout, "1NFO: the INput pipe %s is opened,\n", argv[1]);
-		// add a dummy keeper strem if the input is external
-		fin_keeper = fopen(argv[1], "w");
-		fprintf(stdout, "1NFO: a keeper writer is set for input stream,\n");
-		fout = stdout;
-		fprintf(stdout, "1NFO: the OUTput stream is set to stdout,\n");
-	}
-	else if (argc == 3) {
-		if ( strcmp(argv[1], "-") == 0 ) {
-			fprintf(stdout, "1NFO: going into stdin-pipe setup,\n");
-			fin = stdin;
-			fprintf(stdout, "1NFO: the INput stream is set to stdin,\n");
-			fprintf(stdout, "1NFO: going open pipe (write) and wait until it is opened from other side,\n");
-			// if( (fout = fopen(argv[2], "w")) == NULL ) {
-			// if ( (dout = open(argv[2], O_WRONLY | O_NONBLOCK)) < 0 ) {
-			if ( (dout = open(argv[2], O_WRONLY & (~O_NONBLOCK))) < 0 ) {
-			// if ( (dout = open(argv[2], O_WRONLY )) < 0 ) {
-				fprintf( stdout, "open %s = %d", argv[2], dout );
-				exit(1);
-			}
-			// fprintf( stdout, "open %s file-descr = %d", argv[2], dout );
-			if( (fout = (FILE*) fdopen(dout, "w")) == NULL ) {
-				sprintf( fifo_open_error_report, "fdopen %d (file-descr)", dout );
-				perror( fifo_open_error_report );
-				exit(1);
-			}
-			fout_keeper = fopen(argv[2], "r");
-			fprintf(stdout, "1NFO: a keeper reader is set for output stream,\n");
-			fprintf(stdout, "1NFO: the OUTput pipe %s is opened,\n", argv[2]);
-		}
-		else {
-			fprintf(stdout, "1NFO: going into pipe-pipe setup,\n");
-			fprintf(stdout, "1NFO: going open pipes (read-write) and wait until they are opened from other side,\n");
-			if ( (din = open(argv[1], O_RDONLY & (~O_NONBLOCK))) < 0 ) {
-				fprintf( stdout, "open %s = %d", argv[2], dout );
-				exit(1);
-			}
-			if( (fin = (FILE*) fdopen(din, "r")) == NULL ) {
-				sprintf( fifo_open_error_report, "fopen %s", argv[1] );
-				perror( fifo_open_error_report );
-				exit(1);
-			}
-			/*
-			if( (fin = fopen(argv[1], "r")) == NULL ) {
-				sprintf( fifo_open_error_report, "fopen %s", argv[1] );
-				perror( fifo_open_error_report );
-				exit(1);
-			}
-			*/
-			// add a dummy keeper strem if the input is external
-			fprintf(stdout, "1NFO: the INput pipe %s is opened,\n", argv[1]);
-			int _open_flag_write_and_blocking = O_WRONLY & (~O_NONBLOCK);
-			// int _open_flag_write = O_WRONLY;
-			// if ( (dout = open(argv[2],  O_WRONLY )) < 0 ) {
-			if ( (dout = open(argv[2], O_WRONLY & (~O_NONBLOCK))) < 0 ) {
-				fprintf( stdout, "open %s = %d", argv[2], dout );
-				exit(1);
-			}
-			if( (fout = (FILE*) fdopen(dout, "w")) == NULL ) {
-				sprintf( fifo_open_error_report, "fdopen %s", argv[2] );
-				perror( fifo_open_error_report );
-				exit(1);
-			}
-			fprintf(stdout, "1NFO: the OUTput pipe %s is opened,\n", argv[2]);
-			fin_keeper = fopen(argv[1], "w");
-			fprintf(stdout, "1NFO: a keeper writer is set for input stream,\n");
-			fout_keeper = fopen(argv[2], "r");
-			fprintf(stdout, "1NFO: a keeper reader is set for output stream,\n");
-		}
 
+		fprintf(stdout, "1NFO: initialized CAENVME lib on device %s,\n      device handler = %d\n", argv[1], dev_handle);
+
+		if (argc == 2) {
+			fprintf(stdout, "1NFO: going into stdin-stdout setup,\n");
+			fin  = stdin;
+			fprintf(stdout, "1NFO: the INput stream is set to stdin,\n");
+			fout = stdout;
+			fprintf(stdout, "1NFO: the OUTput stream is set to stdout,\n");
+		}
+		else if (argc == 3) { // TODO: add a check for --help, -h argument
+			fprintf(stdout, "1NFO: going into pipe-stdout setup,\n");
+			if( (fin = fopen(argv[2], "r")) == NULL ) {
+				sprintf( error_report, "fopen %s", argv[2] );
+				perror( error_report );
+				exit(1);
+			}
+			fprintf(stdout, "1NFO: the INput pipe %s is opened,\n", argv[2]);
+			// add a dummy keeper strem if the input is external
+			fin_keeper = fopen(argv[2], "w");
+			fprintf(stdout, "1NFO: a keeper writer is set for input stream,\n");
+			fout = stdout;
+			fprintf(stdout, "1NFO: the OUTput stream is set to stdout,\n");
+		}
+		else if (argc == 4) {
+			if ( strcmp(argv[2], "-") == 0 ) {
+				fprintf(stdout, "1NFO: going into stdin-pipe setup,\n");
+				fin = stdin;
+				fprintf(stdout, "1NFO: the INput stream is set to stdin,\n");
+				fprintf(stdout, "1NFO: going open pipe (write) and wait until it is opened from other side,\n");
+				// if( (fout = fopen(argv[3], "w")) == NULL ) {
+				// if ( (dout = open(argv[3], O_WRONLY | O_NONBLOCK)) < 0 ) {
+				if ( (dout = open(argv[3], O_WRONLY & (~O_NONBLOCK))) < 0 ) {
+				// if ( (dout = open(argv[3], O_WRONLY )) < 0 ) {
+					fprintf( stdout, "open %s = %d", argv[3], dout );
+					exit(1);
+				}
+				// fprintf( stdout, "open %s file-descr = %d", argv[3], dout );
+				if( (fout = (FILE*) fdopen(dout, "w")) == NULL ) {
+					sprintf( error_report, "fdopen %d (file-descr)", dout );
+					perror( error_report );
+					exit(1);
+				}
+				fout_keeper = fopen(argv[3], "r");
+				fprintf(stdout, "1NFO: a keeper reader is set for output stream,\n");
+				fprintf(stdout, "1NFO: the OUTput pipe %s is opened,\n", argv[3]);
+			}
+			else {
+				fprintf(stdout, "1NFO: going into pipe-pipe setup,\n");
+				fprintf(stdout, "1NFO: going open pipes (read-write) and wait until they are opened from other side,\n");
+				if ( (din = open(argv[2], O_RDONLY & (~O_NONBLOCK))) < 0 ) {
+					fprintf( stdout, "open %s = %d", argv[3], dout );
+					exit(1);
+				}
+				if( (fin = (FILE*) fdopen(din, "r")) == NULL ) {
+					sprintf( error_report, "fopen %s", argv[2] );
+					perror( error_report );
+					exit(1);
+				}
+				/*
+				if( (fin = fopen(argv[2], "r")) == NULL ) {
+					sprintf( error_report, "fopen %s", argv[2] );
+					perror( error_report );
+					exit(1);
+				}
+				*/
+				// add a dummy keeper strem if the input is external
+				fprintf(stdout, "1NFO: the INput pipe %s is opened,\n", argv[2]);
+				int _open_flag_write_and_blocking = O_WRONLY & (~O_NONBLOCK);
+				// int _open_flag_write = O_WRONLY;
+				// if ( (dout = open(argv[3],  O_WRONLY )) < 0 ) {
+				if ( (dout = open(argv[3], O_WRONLY & (~O_NONBLOCK))) < 0 ) {
+					fprintf( stdout, "open %s = %d", argv[3], dout );
+					exit(1);
+				}
+				if( (fout = (FILE*) fdopen(dout, "w")) == NULL ) {
+					sprintf( error_report, "fdopen %s", argv[3] );
+					perror( error_report );
+					exit(1);
+				}
+				fprintf(stdout, "1NFO: the OUTput pipe %s is opened,\n", argv[3]);
+				fin_keeper = fopen(argv[2], "w");
+				fprintf(stdout, "1NFO: a keeper writer is set for input stream,\n");
+				fout_keeper = fopen(argv[3], "r");
+				fprintf(stdout, "1NFO: a keeper reader is set for output stream,\n");
+			}
+
+		}
+		else
+		{
+			fprintf(stderr, "1NFO: Usage:\n$ pipe-hub <devname> [<instream>] [<outstream>]\n");
+			exit(1);
+		}
 	}
 	setvbuf(fout, NULL, _IONBF, BUFF_SIZE); // TODO: should there be a buffer size for no-buffer?
 	fprintf(fsts, "INFO: the I/O streams are connected.\n");

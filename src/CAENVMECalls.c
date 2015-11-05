@@ -1,6 +1,10 @@
 #include <stdio.h> // fprintf, FILE
 // here one should have a CAEN header as well
 
+#include "CAENVMElib.h"
+#include "CAENVMEoslib.h"
+#include "CAENVMEtypes.h"
+
 
 char * CAENVMECall( char * command_name, char * command_parameters, FILE * stream_out, FILE * stream_err )
 {

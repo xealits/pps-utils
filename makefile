@@ -18,6 +18,10 @@ pipe-hub: pipe-hub.o CAENVMECalls.o PipeHub.o
 	#          > All together, the main process with [ C startup pipe-hub ]
 	gcc $(CFLAGS) -o $@ $^
 
+pipe-hub-test: pipe-hub.o CAENVMECalls.o PipeHub.o CAENVMElib.o
+	#          > All together, the main process with [ C startup pipe-hub ]
+	gcc $(CFLAGS) -o $@ $^
+
 # gcc -I include -c $<
 pipe-hub.o: pipe-hub.c PipeHub.h
 	#          > [ The C startup pipe-hub object ]
@@ -36,6 +40,9 @@ CAENVMECalls.o: CAENVMECalls.c
 	#          > [ The CAENVMECalls lib interface object ]
 	gcc $(CFLAGS) -c $<
 
+
+CAENVMElib.o: CAENVMElib.c
+	gcc $(CFLAGS) -c $<
 
 
 clear:

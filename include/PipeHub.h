@@ -20,6 +20,12 @@ typedef enum Status_Prompt_Levels
 
 typedef struct PipeHub_Parameters
 {
+	// let's keep pointers to the parameters for now,
+	// as if we are running procedures with ifing on parameters all the time
+	// later actual procedure pointers should be here
+	// and this procedures will be run
+	long * VME_device_handler;
+
 	FILE * stream_in;
 	FILE * stream_in_keeper; // TODO: maybe keepers should not be here?
 	FILE * stream_sts;
