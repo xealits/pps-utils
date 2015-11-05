@@ -125,14 +125,29 @@ int main(int argc, char *argv[])
         int32_t dev_handle;
         CAENVME_API ret;
 
+		ret = CAENVME_SWRelease(error_report);
+		if (ret!=cvSuccess) {
+			sprintf( error_report, "could not get the SW release of CAENVME lib" );
+			perror( error_report );
+			exit(1);
+		}
+		fprintf(stdout, "1NFO: SW release of CAENVME lib = %s\n", error_report);
+
         ret = CAENVME_Init(board_type, 0x0, dev, &dev_handle);
 		if (ret!=cvSuccess) {
 			sprintf( error_report, "could not initialize CAENVME lib for %s device", argv[1] );
 			perror( error_report );
 			exit(1);
 		}
-
 		fprintf(stdout, "1NFO: initialized CAENVME lib on device %s,\n      device handler = %d\n", argv[1], dev_handle);
+
+        ret = CAENVME_BoardFWRelease(dev_handle, error_report);
+		if (ret!=cvSuccess) {
+			sprintf( error_report, "could not initialize CAENVME lib for %s device", argv[1] );
+			perror( error_report );
+			exit(1);
+		}
+		fprintf(stdout, "1NFO: HW release of CAENVME lib = %s\n", error_report);
 
 		if (argc == 2) {
 			fprintf(stdout, "1NFO: going into stdin-stdout setup,\n");
