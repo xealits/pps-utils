@@ -134,6 +134,8 @@ int main(int argc, char *argv[])
 		fprintf(stdout, "1NFO: SW release of CAENVME lib = %s\n", error_report);
 
         ret = CAENVME_Init(board_type, 0x0, dev, &dev_handle);
+        // somehow the lib successfuly initializes and returns HW release (called later)
+        // even if I input wrong filename
 		if (ret!=cvSuccess) {
 			sprintf( error_report, "could not initialize CAENVME lib for %s device", argv[1] );
 			perror( error_report );
