@@ -36,6 +36,8 @@
 #define FIFO_READLEN 80
 #define BUFF_SIZE 80
 
+
+
 FILE *fin;
 int din; // descriptor of in
 FILE *fin_keeper;
@@ -51,6 +53,7 @@ int derr;
 
 
 
+
 // TODO: handle SIGINT?
 //void termination_handler( int signum );
 
@@ -58,6 +61,10 @@ int derr;
 
 int main(int argc, char *argv[])
 {
+	PipeHub_Parameters initial_parameters;
+
+	initial_parameters.status_prompt_level = all;
+
 	fprintf(stdout, "1NFO: Starting the program, soon I/O will be set..\n");
 	//signal(SIGINT, termination_handler);
 
@@ -184,8 +191,14 @@ int main(int argc, char *argv[])
 	fprintf(fsts, "INFO: No buffering on output, status and error streams is set.\n");
 	fprintf(fout, "TEST output: test-test!\n");
 
-	// 
-	PipeHub( fin, fsts, fout, ferr );
+	// packing the streams into the PipeHub parameters structure and running the procedure
+	initial_parameters.stream_in = fin;
+	initial_parameters.stream_in_keeper = fin_keeper;
+	initial_parameters.stream_sts = fsts;
+	initial_parameters.stream_out = fout;
+	initial_parameters.stream_out_keeper = fout_keeper;
+	initial_parameters.stream_err = ferr;
+	PipeHub( &initial_parameters );
 
 	//fclose(fin);
 	//fclose(fout);

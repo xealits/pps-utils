@@ -11,6 +11,26 @@
 //   * the input of the user (commands)
 //   * the configuration of the hub (i/o streams, buffering, what else) and its' status at the moment
 //   * the VME bus, which gets the commands and outputs either data or error code -- each has its' own output stream)
-void PipeHub( FILE * stream_in, FILE * stream_sts, FILE * stream_out, FILE * stream_err );
+
+typedef enum Status_Prompt_Levels
+{
+	all,
+	clean
+} Status_Prompt_Levels;
+
+typedef struct PipeHub_Parameters
+{
+	FILE * stream_in;
+	FILE * stream_in_keeper; // TODO: maybe keepers should not be here?
+	FILE * stream_sts;
+	FILE * stream_out;
+	FILE * stream_out_keeper;
+	FILE * stream_err;
+
+	Status_Prompt_Levels * status_prompt_level;
+} PipeHub_Parameters;
+
+// void PipeHub( FILE * stream_in, FILE * stream_sts, FILE * stream_out, FILE * stream_err );
+void PipeHub( PipeHub_Parameters * );
 
 #endif

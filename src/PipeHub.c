@@ -17,8 +17,8 @@
 #include <ctype.h> // isspace
 #include <string.h> // strlen, strcmp
 //#include <signal.h> // signal and SIGNINT
-// #include <include/CAENVMECalls.h> // CAENVMECall
-// #include <../include/CAENVMECalls.h>
+
+#include <PipeHub.h>
 #include <CAENVMECalls.h>
 //#define FIFO_FILE       "pipe"
 #define FIFO_READLEN 258
@@ -41,9 +41,16 @@ int is_blank(const char *s);
 // the function checks if the input string consists of blank characters
 
 
-
-void PipeHub( FILE * fin, FILE * fsts, FILE * fout, FILE * ferr )
+// void PipeHub( FILE * fin, FILE * fsts, FILE * fout, FILE * ferr )
+void PipeHub( PipeHub_Parameters * parameters)
 {
+	FILE * fin  = parameters->stream_in;
+	FILE * fsts = parameters->stream_sts;
+	FILE * fout = parameters->stream_out;
+	FILE * ferr = parameters->stream_err;
+
+	Status_Prompt_Levels * status_prompt_level = parameters->status_prompt_level;
+
 
 	char readbuf[FIFO_READLEN];
 	// char command_word[FIRST_WORD_READLEN];

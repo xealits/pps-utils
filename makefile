@@ -26,9 +26,8 @@ pipe-hub.o: pipe-hub.c PipeHub.h
 # PipeHub.o: PipeHub.c CAENVMECalls.h CAENVMECalls.o
 # PipeHub.o: PipeHub.c CAENVMECalls.o
 # PipeHub.o: PipeHub.c CAENVMECalls.h PipeHub.h
-# tecnically, the object does not depend on the header file
-# (in a normal language they should be one thing)
-PipeHub.o: PipeHub.c CAENVMECalls.h
+# now the PipeHub.h contains some definitions, used in PipeHub.c
+PipeHub.o: PipeHub.c PipeHub.h CAENVMECalls.h
 	#          > [ The PipeHub object ]
 	gcc $(CFLAGS) -c $<
 
