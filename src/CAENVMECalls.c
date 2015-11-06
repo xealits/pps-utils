@@ -11,7 +11,7 @@
 #define COMMAND_NAME_LEN 32
 #define COMMAND_HELP_LEN 128
 #define COMMAND_RETURN_LEN 32
-#define NUM_COMMANDS 5
+#define NUM_COMMANDS 4
 
 
 typedef char * (* ParseParams_n_CallCAEN)( char * command_parameters, FILE * stream_out, FILE * stream_err );
@@ -74,16 +74,6 @@ const char write_cycle_help[COMMAND_HELP_LEN] = "TODO";
 // 	.command_help = "TOD"
 // };
 
-const char help_name[COMMAND_NAME_LEN] = "help";
-// TODO: it seems the help command should output to status stream?
-char * help_proc( char *, FILE *, FILE * );
-const char help_help[COMMAND_HELP_LEN] = "TODO";
-
-// static const caen_call help = {
-// 	.command_name = "help",
-// 	.command_proc = help_proc,
-// 	.command_help = "TOD"
-// };
 
 
 const char read_bridge_fw_name[COMMAND_NAME_LEN] = "read_bridge_fw";
@@ -105,24 +95,34 @@ const char read_bridge_fw_help[COMMAND_HELP_LEN] = "TODO";
 
 
 char * command_names[NUM_COMMANDS] = {
-	read_block_cycle_name, read_cycle_name, write_cycle_name,
-	help_name, read_bridge_fw_name
+	read_block_cycle_name, read_cycle_name,
+	write_cycle_name, read_bridge_fw_name
 };
 
 ParseParams_n_CallCAEN command_procs[NUM_COMMANDS] = {
-	read_block_cycle_proc, read_cycle_proc, write_cycle_proc,
-	help_proc, read_bridge_fw_proc
+	read_block_cycle_proc, read_cycle_proc,
+	write_cycle_proc, read_bridge_fw_proc
 };
 
 char * command_helps[NUM_COMMANDS] = {
-	read_block_cycle_help, read_cycle_help, write_cycle_help,
-	help_help, read_bridge_fw_help
+	read_block_cycle_help, read_cycle_help,
+	write_cycle_help, read_bridge_fw_help
 };
 
+// const char help_name[COMMAND_NAME_LEN] = "help";
+// TODO: it seems the help command should output to status stream?
+// char * help_proc( char *, FILE *, FILE * );
+// const char help_help[COMMAND_HELP_LEN] = "TODO";
+
+// static const caen_call help = {
+// 	.command_name = "help",
+// 	.command_proc = help_proc,
+// 	.command_help = "TOD"
+// };
 
 // TODO: it seems the help command should output to status stream?
 //       should I separate it from other commands?
-char * help_proc( char * command_parameters, FILE * stream_out, FILE * stream_err )
+char * CAENVME_help_proc( char * command_parameters, FILE * stream_sts, FILE * stream_out, FILE * stream_err )
 {
 	char command_name[COMMAND_NAME_LEN];
 	if ( sscanf(command_parameters, "%s", command_name) < 1 )
@@ -130,29 +130,36 @@ char * help_proc( char * command_parameters, FILE * stream_out, FILE * stream_er
 		/* print all help */
 		for (int i = 0; i < NUM_COMMANDS; ++i)
 		{
-			fprintf(stream_out, "%s:\n\t%s\n\n", command_names[i], command_helps[i]);
+			fprintf(stream_sts, "%s:\n\t%s\n\n", command_names[i], command_helps[i]);
 		}
 	
 	}
 	else
 	{
-		/* print the help on the givven commandname */
-		int i;
+		/* print the help on the given commandname */
+		int i = 0;
 		for (i = 0; i < NUM_COMMANDS; ++i)
 		{
 			if (strcmp(command_name, command_names[i]) == 0)
 			{
-				fprintf(stream_out, "%s:\n%s\n", command_names[i], command_helps[i]);
+				fprintf(stream_sts, "%s:\n\t%s\n", command_names[i], command_helps[i]);
 				break;
 			}
 		}
 		/* if the commandname was not found -- report */
 		if ( i == NUM_COMMANDS )
 		{
-			fprintf(stream_out, "command %s was not found in help strings\n", command_name);
+			fprintf(stream_sts, "command %s was not found in help strings\n", command_name);
+			fprintf(stream_sts, "help usage:\n\thelp [<commandname>]\nlist of known command names:\n\t");
+			// print list of commandnames
+			for (int i = 0; i < NUM_COMMANDS - 1; ++i)
+			{
+				fprintf(stream_sts, "%s, ", command_names[i]);
+			}
+			fprintf(stream_sts, "%s.\n", command_names[NUM_COMMANDS - 1]);
 		}
 	}
-	// fprintf(stream_out, "CAENVMECalls out: %s\n", "DONE");
+	// fprintf(stream_sts, "CAENVMECalls out: %s\n", "DONE");
 	// fprintf(stream_err, "CAENVMECalls err: %s\n", "NONE");
 	return("all_ok");
 }

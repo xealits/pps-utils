@@ -116,7 +116,7 @@ void PipeHub( PipeHub_Parameters * parameters)
 			else if ( strcmp(command_word, "help") == 0 )
 			{
 				fprintf(fsts, "INFO: Getting help from CAENVMECalls on %s,\n", rest_of_input);
-				vme_call_result = CAENVMECall( command_word, rest_of_input, fout, ferr );
+				vme_call_result = CAENVME_help_proc( rest_of_input, fsts, fout, ferr );
 				fprintf(fsts, "INFO: the call result is %s.\n", vme_call_result);
 			}
 			else
