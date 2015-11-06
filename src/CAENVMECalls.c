@@ -165,7 +165,7 @@ char * read_cycle_proc(int32_t bridge_handler, char * command_parameters, FILE *
 	for (int i = 0; i < width_num_bytes; ++i)
 	{
 		// TODO: this is really bad for performance
-		fprintf(stream_out, "%x", bytes_to_read[i]);
+		fprintf(stream_out, "%02x", bytes_to_read[i]);
 	}
 	fprintf(stream_out, "\n");
 	fprintf(stream_err, "\tCAENVMECalls err: %s\n", "N0NE");
