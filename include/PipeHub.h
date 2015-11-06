@@ -26,7 +26,7 @@ typedef struct PipeHub_Parameters
 	// later actual procedure pointers should be here
 	// and this procedures will be run
 
-	// accept the device handler ID
+	// except the device handler ID
 	// long VME_bridge_handler;
 	int32_t VME_bridge_handler;
 
@@ -38,6 +38,7 @@ typedef struct PipeHub_Parameters
 	FILE * stream_err;
 
 	Status_Prompt_Levels * status_prompt_level;
+	char * prompt_line;
 } PipeHub_Parameters;
 
 // void PipeHub( FILE * stream_in, FILE * stream_sts, FILE * stream_out, FILE * stream_err );

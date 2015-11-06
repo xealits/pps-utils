@@ -80,9 +80,12 @@ int main(int argc, char *argv[])
 	signal(SIGINT, termination_handler);
 
 	Status_Prompt_Levels prompt_level = all;
+	// char prompt_line[64] = "> ";
+	char prompt_line[64] = "enter command (or help, quit, exit):\n> ";
 
 	pipehub_parameters.status_prompt_level = & prompt_level;
 	pipehub_parameters.VME_bridge_handler = 0;
+	pipehub_parameters.prompt_line = prompt_line;
 
 	fprintf(stdout, "1NFO: Starting the program, soon I/O will be set..\n");
 

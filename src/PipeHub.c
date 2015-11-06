@@ -50,6 +50,7 @@ void PipeHub( PipeHub_Parameters * parameters)
 	FILE * fout = parameters->stream_out;
 	FILE * ferr = parameters->stream_err;
 	int32_t bridge_handler = parameters->VME_bridge_handler;
+	char * prompt_line = parameters->prompt_line;
 
 	Status_Prompt_Levels * status_prompt_level = parameters->status_prompt_level;
 
@@ -74,7 +75,7 @@ void PipeHub( PipeHub_Parameters * parameters)
 
 	fprintf(fsts, "INFO: The PipeHub is configured and ready.\n");
 	// fprintf(fout, "TEST output: test-test!\n");
-	fprintf(fsts, "INFO: reading the input command -\n> ");
+	fprintf(fsts, "INFO: reading the input command -\n%s", prompt_line);
 
 	int compar_parse_count;
 
@@ -154,7 +155,7 @@ void PipeHub( PipeHub_Parameters * parameters)
 		*/
 
 
-		fprintf(fsts, "> ");
+		fprintf(fsts, "%s", prompt_line);
 	}
 
 	//fclose(fin);

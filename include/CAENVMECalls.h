@@ -14,4 +14,9 @@ char * CAENVMECall( int32_t bridge_handler,
 	FILE * stream_out,
 	FILE * stream_err );
 
+char * CAENVME_help_proc( char * command_parameters,
+	FILE * stream_sts,
+	FILE * stream_out,
+	FILE * stream_err );
+
 #endif
