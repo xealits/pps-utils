@@ -82,7 +82,12 @@ char * read_cycle_proc(int32_t bridge_handler, char * command_parameters, FILE *
 	CVDataWidth data_width = cvD16; // default VME data width specifier, 16
 	uint width = 16; // actual input, actual 8, 16, 32 or 64
 	uint width_num_bytes = 2; // input / 8 -- in bytes: 1, 2, 4 or 8
+
 	unsigned char bytes_to_read[8]; // 8, 16, 32 or 64 bits
+	for (int i = 0; i < 8; ++i)
+	{
+		bytes_to_read[i] = 0;
+	}
 
 	int pars_num;
 
