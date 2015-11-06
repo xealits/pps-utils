@@ -1,4 +1,4 @@
-#include <stdio.h> // fprintf, FILE
+#include <stdio.h> // fprintf, FILE, sscanf
 // here one should have a CAEN header as well
 
 #include "CAENVMElib.h"
@@ -75,12 +75,8 @@ const char write_cycle_help[COMMAND_HELP_LEN] = "TODO";
 // };
 
 const char help_name[COMMAND_NAME_LEN] = "help";
-char * help_proc( char * command_parameters, FILE * stream_out, FILE * stream_err )
-{
-	fprintf(stream_out, "CAENVMECalls out: %s\n", "DONE");
-	fprintf(stream_err, "CAENVMECalls err: %s\n", "NONE");
-	return("all_ok");
-}
+// TODO: it seems the help command should output to status stream?
+char * help_proc( char *, FILE *, FILE * );
 const char help_help[COMMAND_HELP_LEN] = "TODO";
 
 // static const caen_call help = {
@@ -124,6 +120,42 @@ char * command_helps[NUM_COMMANDS] = {
 };
 
 
+// TODO: it seems the help command should output to status stream?
+//       should I separate it from other commands?
+char * help_proc( char * command_parameters, FILE * stream_out, FILE * stream_err )
+{
+	char command_name[COMMAND_NAME_LEN];
+	if ( sscanf(command_parameters, "%s", command_name) < 1 )
+	{
+		/* print all help */
+		for (int i = 0; i < NUM_COMMANDS; ++i)
+		{
+			fprintf(stream_out, "%s:\n\t%s\n\n", command_names[i], command_helps[i]);
+		}
+	
+	}
+	else
+	{
+		/* print the help on the givven commandname */
+		int i;
+		for (i = 0; i < NUM_COMMANDS; ++i)
+		{
+			if (strcmp(command_name, command_names[i]) == 0)
+			{
+				fprintf(stream_out, "%s:\n%s\n", command_names[i], command_helps[i]);
+				break;
+			}
+		}
+		/* if the commandname was not found -- report */
+		if ( i == NUM_COMMANDS )
+		{
+			fprintf(stream_out, "command %s was not found in help strings\n", command_name);
+		}
+	}
+	// fprintf(stream_out, "CAENVMECalls out: %s\n", "DONE");
+	// fprintf(stream_err, "CAENVMECalls err: %s\n", "NONE");
+	return("all_ok");
+}
 
 // static const caen_call caen_calls_commands[NUM_COMMANDS] = {
 // 	read_block_cycle, read_cycle, write_cycle,
@@ -142,7 +174,8 @@ char * CAENVMECall( char * command_name, char * command_parameters, FILE * strea
 	// fprintf(stream_out, "CAENVMECalls out: %s\n", "DONE");
 	// fprintf(stream_err, "CAENVMECalls err: %s\n", "NONE");
 
-	for (int i = 0; i < NUM_COMMANDS; ++i)
+	int i;
+	for (i = 0; i < NUM_COMMANDS; ++i)
 	{
 		// if (strcmp(command_name, caen_calls_commands[i].command_name) == 0)
 		// {
@@ -155,6 +188,13 @@ char * CAENVMECall( char * command_name, char * command_parameters, FILE * strea
 			break;
 		}
 	}
+	/* if the commandname was not found -- report */
+	if ( i == NUM_COMMANDS )
+	{
+		fprintf(stream_out, "commandname %s was not found\n", command_name);
+		ret = "no_action";
+	}
+
 
 	return(ret);
 }

@@ -91,6 +91,10 @@ void PipeHub( PipeHub_Parameters * parameters)
 
 		// TODO: should one strip the trailing newline here? check for readbuffer overload?
 
+		// flush the input parsing strings
+		command_word[0] = '\0';
+		rest_of_input[0] = '\0';
+
 		if ( (compar_parse_count = sscanf(readbuf, "%32s %[^\n]", command_word, rest_of_input)) < 1 ) { continue; }
 		else {
 			if ( strcmp(command_word, "set") == 0 )
