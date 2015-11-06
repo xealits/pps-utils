@@ -1,6 +1,7 @@
 #ifndef PIPEHUB_H_
 #define PIPEHUB_H_
 #include <stdio.h> // FILE
+#include <stdint.h>
 
 // stream_in  -- input commands
 // stream_sts -- status of the hub
@@ -24,7 +25,10 @@ typedef struct PipeHub_Parameters
 	// as if we are running procedures with ifing on parameters all the time
 	// later actual procedure pointers should be here
 	// and this procedures will be run
-	long * VME_device_handler;
+
+	// accept the device handler ID
+	// long VME_bridge_handler;
+	int32_t VME_bridge_handler;
 
 	FILE * stream_in;
 	FILE * stream_in_keeper; // TODO: maybe keepers should not be here?

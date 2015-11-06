@@ -25,7 +25,7 @@
 // #include <linux/stat.h>
 
 #include <string.h> // strlen, strcmp
-// #include <signal.h> // signal and SIGNINT
+#include <signal.h> // signal and SIGNINT
 #include <fcntl.h> // O_WRONLY, O_NONBLOCK
 
 
@@ -58,23 +58,33 @@ int dsts;
 FILE *ferr;
 int derr;
 
-
+PipeHub_Parameters pipehub_parameters;
 
 
 // TODO: handle SIGINT?
-//void termination_handler( int signum );
+void termination_handler_dummy( int signum ) {
+	;
+}
+
+void termination_handler( int signum );
 
 
 
 int main(int argc, char *argv[])
 {
-	PipeHub_Parameters initial_parameters;
+	// this termination_handler closes opened streams
+	// and calls CAENVME_End
+	// TODO: shouldn't it be set after the streams are opened
+	// and the CAENVME_Init is called?
+	signal(SIGINT, termination_handler_dummy);
+	signal(SIGINT, termination_handler);
+
 	Status_Prompt_Levels prompt_level = all;
 
-	initial_parameters.status_prompt_level = & prompt_level;
+	pipehub_parameters.status_prompt_level = & prompt_level;
+	pipehub_parameters.VME_bridge_handler = 0;
 
 	fprintf(stdout, "1NFO: Starting the program, soon I/O will be set..\n");
-	//signal(SIGINT, termination_handler);
 
 	fsts = stdout;
 	ferr = stdout;
@@ -91,11 +101,11 @@ int main(int argc, char *argv[])
 
 	// char readbuf[FIFO_READLEN];
 
-        /* Create the FIFO if it does not exist */
+	/* Create the FIFO if it does not exist */
 	/* the filename of the FIFO is comming from the user
 	   s/he should take care of it */
-        //umask(0);
-        //mknod(FIFO_FILE, S_IFIFO|0666, 0);
+		//umask(0);
+		//mknod(FIFO_FILE, S_IFIFO|0666, 0);
 
 	fprintf(stdout, "1NFO: going to process the commandline options and setup I/O streams,\n");
 
@@ -115,15 +125,15 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 	else {
-		// initialize VME_device_handler
+		// initialize VME_bridge_handler
 		// setup i/o streams
-        CVBoardTypes board_type;
-        board_type = cvV2718; // TODO: make it accessible
-        CVErrorCodes caen_lib_ret;
-        int dev = atoi(argv[1]);
-        // long dev_handle; // datasheet says long, header -- int32_t
-        int32_t dev_handle;
-        CAENVME_API ret;
+		CVBoardTypes board_type;
+		board_type = cvV2718; // TODO: make it accessible
+		CVErrorCodes caen_lib_ret;
+		int dev = atoi(argv[1]);
+		// long dev_handle; // datasheet says long, header -- int32_t
+		int32_t dev_handle;
+		CAENVME_API ret;
 
 		ret = CAENVME_SWRelease(error_report);
 		if (ret!=cvSuccess) {
@@ -133,17 +143,18 @@ int main(int argc, char *argv[])
 		}
 		fprintf(stdout, "1NFO: SW release of CAENVME lib = %s\n", error_report);
 
-        ret = CAENVME_Init(board_type, 0x0, dev, &dev_handle);
-        // somehow the lib successfuly initializes and returns HW release (called later)
-        // even if I input wrong filename
+		ret = CAENVME_Init(board_type, 0x0, dev, &dev_handle);
+		// somehow the lib successfuly initializes and returns HW release (called later)
+		// even if I input wrong filename
 		if (ret!=cvSuccess) {
 			sprintf( error_report, "could not initialize CAENVME lib for %s device", argv[1] );
 			perror( error_report );
 			exit(1);
 		}
 		fprintf(stdout, "1NFO: initialized CAENVME lib on device %s,\n      device handler = %d\n", argv[1], dev_handle);
+		pipehub_parameters.VME_bridge_handler = dev_handle;
 
-        ret = CAENVME_BoardFWRelease(dev_handle, error_report);
+		ret = CAENVME_BoardFWRelease(dev_handle, error_report);
 		if (ret!=cvSuccess) {
 			sprintf( error_report, "could not initialize CAENVME lib for %s device", argv[1] );
 			perror( error_report );
@@ -248,30 +259,38 @@ int main(int argc, char *argv[])
 	fprintf(fout, "TEST output: test-test!\n");
 
 	// packing the streams into the PipeHub parameters structure and running the procedure
-	initial_parameters.stream_in = fin;
-	initial_parameters.stream_in_keeper = fin_keeper;
-	initial_parameters.stream_sts = fsts;
-	initial_parameters.stream_out = fout;
-	initial_parameters.stream_out_keeper = fout_keeper;
-	initial_parameters.stream_err = ferr;
-	PipeHub( &initial_parameters );
+	pipehub_parameters.stream_in = fin;
+	pipehub_parameters.stream_in_keeper = fin_keeper;
+	pipehub_parameters.stream_sts = fsts;
+	pipehub_parameters.stream_out = fout;
+	pipehub_parameters.stream_out_keeper = fout_keeper;
+	pipehub_parameters.stream_err = ferr;
+	PipeHub( &pipehub_parameters );
 
 	//fclose(fin);
 	//fclose(fout);
 	return(0);
 }
 
-/*
+
 // getting double free error here
 void termination_handler( int signum )
 {
-	fprintf(fsts, "INFO: Terminating the program..\n");
-	fclose(fin);
-	fclose(fout);
-	fclose(ferr);
-	fclose(fsts);
-	fprintf(stdout, "INFO: I/O closed..\n");
-	fprintf(stdout, "INFO: Bye.\n");
+	fprintf(fsts, "\nINFO: Terminating the program..\n");
+	// TODO: seemingly these are already closed somehow
+	// when I call the nadler
+	// fclose(fin);
+	// fclose(fin_keeper);
+	// fclose(fout);
+	// fclose(fout_keeper);
+	// fclose(ferr);
+	// fclose(fsts);
+	fprintf(stdout, "!NFO: I/O closed..\n");
+	CAENVME_End( pipehub_parameters.VME_bridge_handler );
+	fprintf(stdout, "!NFO: CAENVME_END called...\n");
+	fprintf(stdout, "!NFO: Bye.\n");
+
+	exit(0);
 }
-*/
+
 

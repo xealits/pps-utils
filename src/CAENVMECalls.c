@@ -14,7 +14,7 @@
 #define NUM_COMMANDS 4
 
 
-typedef char * (* ParseParams_n_CallCAEN)( char * command_parameters, FILE * stream_out, FILE * stream_err );
+typedef char * (* ParseParams_n_CallCAEN)(int32_t bridge_handler, char * command_parameters, FILE * stream_out, FILE * stream_err );
 
 
 // typedef struct caen_call
@@ -26,7 +26,7 @@ typedef char * (* ParseParams_n_CallCAEN)( char * command_parameters, FILE * str
 
 
 const char read_block_cycle_name[COMMAND_NAME_LEN] = "read_block_cycle";
-char * read_block_cycle_proc( char * command_parameters, FILE * stream_out, FILE * stream_err )
+char * read_block_cycle_proc(int32_t bridge_handler, char * command_parameters, FILE * stream_out, FILE * stream_err )
 {
 	fprintf(stream_out, "CAENVMECalls out: %s\n", "DONE");
 	fprintf(stream_err, "CAENVMECalls err: %s\n", "NONE");
@@ -42,7 +42,7 @@ const char read_block_cycle_help[COMMAND_HELP_LEN] = "TODO";
 
 
 const char read_cycle_name[COMMAND_NAME_LEN] = "read_cycle";
-char * read_cycle_proc( char * command_parameters, FILE * stream_out, FILE * stream_err )
+char * read_cycle_proc(int32_t bridge_handler, char * command_parameters, FILE * stream_out, FILE * stream_err )
 {
 	fprintf(stream_out, "CAENVMECalls out: %s\n", "DONE");
 	fprintf(stream_err, "CAENVMECalls err: %s\n", "NONE");
@@ -59,7 +59,7 @@ const char read_cycle_help[COMMAND_HELP_LEN] = "TODO";
 
 
 const char write_cycle_name[COMMAND_NAME_LEN] = "write_cycle";
-char * write_cycle_proc( char * command_parameters, FILE * stream_out, FILE * stream_err )
+char * write_cycle_proc(int32_t bridge_handler, char * command_parameters, FILE * stream_out, FILE * stream_err )
 {
 	fprintf(stream_out, "CAENVMECalls out: %s\n", "DONE");
 	fprintf(stream_err, "CAENVMECalls err: %s\n", "NONE");
@@ -77,13 +77,21 @@ const char write_cycle_help[COMMAND_HELP_LEN] = "TODO";
 
 
 const char read_bridge_fw_name[COMMAND_NAME_LEN] = "read_bridge_fw";
-char * read_bridge_fw_proc( char * command_parameters, FILE * stream_out, FILE * stream_err )
+char * read_bridge_fw_proc(int32_t bridge_handler,
+	char * command_parameters,
+	FILE * stream_out,
+	FILE * stream_err )
 {
-	fprintf(stream_out, "CAENVMECalls out: %s\n", "DONE");
-	fprintf(stream_err, "CAENVMECalls err: %s\n", "NONE");
+	CAENVME_API call_res;
+	char FWRel[64];
+
+	call_res = CAENVME_BoardFWRelease(bridge_handler, FWRel);
+	// TODO: check call_res
+	fprintf(stream_out, "%s\n", FWRel);
+	fprintf(stream_err, "\tCAENVMECalls err: %s\n", "N0NE");
 	return("all_ok");
 }
-const char read_bridge_fw_help[COMMAND_HELP_LEN] = "TODO";
+const char read_bridge_fw_help[COMMAND_HELP_LEN] = "read_bridge_fw\n\tno parameters,\n\ton success returns firmware version of the board.\n";
 
 // static const caen_call read_bridge_fw = {
 // 	.command_name = "read_bridge_fw",
@@ -122,7 +130,7 @@ char * command_helps[NUM_COMMANDS] = {
 
 // TODO: it seems the help command should output to status stream?
 //       should I separate it from other commands?
-char * CAENVME_help_proc( char * command_parameters, FILE * stream_sts, FILE * stream_out, FILE * stream_err )
+char * CAENVME_help_proc(char * command_parameters, FILE * stream_sts, FILE * stream_out, FILE * stream_err )
 {
 	char command_name[COMMAND_NAME_LEN];
 	if ( sscanf(command_parameters, "%s", command_name) < 1 )
@@ -174,9 +182,16 @@ char * CAENVME_help_proc( char * command_parameters, FILE * stream_sts, FILE * s
 // char ret[COMMAND_RETURN_LEN];
 char * ret;
 
-char * CAENVMECall( char * command_name, char * command_parameters, FILE * stream_out, FILE * stream_err )
+char * CAENVMECall( int32_t bridge_handler,
+	char * command_name,
+	char * command_parameters,
+	FILE * stream_sts,
+	FILE * stream_out,
+	FILE * stream_err )
 {
 
+	// the output log should contain the issued commands
+	// TODO: but what to do in case of stream reading the boards?
 	fprintf(stream_out, "CAENVMECalls got: command : %s, parameters : %s\n", command_name, command_parameters);
 	// fprintf(stream_out, "CAENVMECalls out: %s\n", "DONE");
 	// fprintf(stream_err, "CAENVMECalls err: %s\n", "NONE");
@@ -191,7 +206,7 @@ char * CAENVMECall( char * command_name, char * command_parameters, FILE * strea
 		// }
 		if (strcmp(command_name, command_names[i]) == 0)
 		{
-			ret = command_procs[i]( command_parameters, stream_out, stream_err );
+			ret = command_procs[i](bridge_handler, command_parameters, stream_out, stream_err );
 			break;
 		}
 	}

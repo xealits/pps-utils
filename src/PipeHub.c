@@ -17,6 +17,7 @@
 #include <ctype.h> // isspace
 #include <string.h> // strlen, strcmp
 //#include <signal.h> // signal and SIGNINT
+#include <stdint.h> // int32_t for CAEN lib device handler
 
 #include <PipeHub.h>
 #include <CAENVMECalls.h>
@@ -48,6 +49,7 @@ void PipeHub( PipeHub_Parameters * parameters)
 	FILE * fsts = parameters->stream_sts;
 	FILE * fout = parameters->stream_out;
 	FILE * ferr = parameters->stream_err;
+	int32_t bridge_handler = parameters->VME_bridge_handler;
 
 	Status_Prompt_Levels * status_prompt_level = parameters->status_prompt_level;
 
@@ -101,23 +103,23 @@ void PipeHub( PipeHub_Parameters * parameters)
 			{
 				if (compar_parse_count < 2)
 				{
-					fprintf(fsts, "INFO: Did not get the reconfig task.\n");
+					fprintf(fsts, "\tINFO: Did not get the reconfig task.\n");
 				}
 				else
 				{
 					/* reset some config of the PipeHub */
-					fprintf(fsts, "INFO: Don't know how to reconfigure myself with %s yet.. Done.\n", rest_of_input);
+					fprintf(fsts, "\tINFO: Don't know how to reconfigure myself with %s yet.. Done.\n", rest_of_input);
 				}
 			}
 			else if ( strcmp(command_word, "awesome!") == 0 )
 			{
-				fprintf(fsts, "INFO: I know!\n");
+				fprintf(fsts, "\tINFO: I know!\n");
 			}
 			else if ( strcmp(command_word, "help") == 0 )
 			{
-				fprintf(fsts, "INFO: Getting help from CAENVMECalls on %s,\n", rest_of_input);
+				fprintf(fsts, "\tINFO: Getting help from CAENVMECalls on %s,\n", rest_of_input);
 				vme_call_result = CAENVME_help_proc( rest_of_input, fsts, fout, ferr );
-				fprintf(fsts, "INFO: the call result is %s.\n", vme_call_result);
+				fprintf(fsts, "\tINFO: the call result is %s.\n", vme_call_result);
 			}
 			else
 			{
@@ -125,7 +127,7 @@ void PipeHub( PipeHub_Parameters * parameters)
 				/*
 				if ( readbuf[strlen(readbuf)-1] == '\n' ) {
 					readbuf[strlen(readbuf)-1]='\0';
-					// fprintf(fsts, "INFO: Received string: %s\n", readbuf);
+					// fprintf(fsts, "\tINFO: Received string: %s\n", readbuf);
 					// fprintf(fout, "Received string: %s\n", readbuf);
 				}
 				*/
@@ -133,20 +135,20 @@ void PipeHub( PipeHub_Parameters * parameters)
 				{
 					rest_of_input[0] = '\0'; // set to empty string
 				}
-				fprintf(fsts, "INFO: Calling VME with %s on %s,\n", command_word, rest_of_input);
-				vme_call_result = CAENVMECall( command_word, rest_of_input, fout, ferr );
-				fprintf(fsts, "INFO: the call result is %s.\n", vme_call_result);
+				fprintf(fsts, "\tINFO: Calling VME with %s on %s,\n", command_word, rest_of_input);
+				vme_call_result = CAENVMECall(bridge_handler, command_word, rest_of_input, fsts, fout, ferr );
+				fprintf(fsts, "\tINFO: the call result is %s.\n", vme_call_result);
 			}
 		}
 		/*
 		if ( readbuf[strlen(readbuf)-1] == '\n' ) {
 			readbuf[strlen(readbuf)-1]='\0';
-			fprintf(fsts, "INFO: Received string: %s\n", readbuf);
+			fprintf(fsts, "\tINFO: Received string: %s\n", readbuf);
 			// fprintf(fout, "Received string: %s\n", readbuf);
 		}
 		else {
-			// fprintf(fsts, "INFO: Received string: %s⏎\n", readbuf);
-			fprintf(fsts, "INFO: Received string: %s...\n", readbuf);
+			// fprintf(fsts, "\tINFO: Received string: %s⏎\n", readbuf);
+			fprintf(fsts, "\tINFO: Received string: %s...\n", readbuf);
 			// fprintf(fout, "Received string: %s...\n", readbuf);
 		}
 		*/

@@ -19,6 +19,11 @@ CAENVME_API CAENVME_Init(CVBoardTypes BdType, short Link, short BdNum, int32_t *
 // CAENVME_API CAENVME_BoardFWRelease(long handle, char *FWRel) {
 CAENVME_API CAENVME_BoardFWRelease(int32_t handle, char *FWRel) {
 	CAENVME_API res = cvSuccess;
-	FWRel[0] = '1', FWRel[1] = '2', FWRel[2] = '3';
+	FWRel[0] = '1', FWRel[1] = '2', FWRel[2] = '3', FWRel[3] = '\0';
+	return(res);
+}
+
+CAENVME_API CAENVME_End( int32_t bridge_handler ) {
+	CAENVME_API res = cvSuccess;
 	return(res);
 }
