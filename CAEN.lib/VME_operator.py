@@ -26,7 +26,7 @@ class PreVMEOperator(CDLL):
         super(PreVMEOperator, self).__init__(libpath)
         # TODO: move the lib initialization further to init?
         #       to make library calls unavailable here?
-        set_ctype_restrictions(super(PreVMEOperator, self)) # set input restrictions for CAEN calls?
+        self.set_ctype_restrictions(super(PreVMEOperator, self)) # set input restrictions for CAEN calls?
         # store the path
         self.libpath = libpath
         self.device_handler = None # ctypes long
