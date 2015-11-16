@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
 		// initialize VME_bridge_handler
 		// setup i/o streams
 		CVBoardTypes board_type;
-		board_type = cvV2718; // TODO: make it accessible
+		board_type = cvV2718; // V2718 = 1 -- PCU-VME bridfe with optical link TODO: make the board_type accessible
 		CVErrorCodes caen_lib_ret;
 		int dev = atoi(argv[1]);
 		// long dev_handle; // datasheet says long, header -- int32_t
@@ -146,6 +146,7 @@ int main(int argc, char *argv[])
 		}
 		fprintf(stdout, "1NFO: SW release of CAENVME lib = %s\n", error_report);
 
+		// TODO: what is dev? what is link 0x0?
 		ret = CAENVME_Init(board_type, 0x0, dev, &dev_handle);
 		// somehow the lib successfuly initializes and returns HW release (called later)
 		// even if I input wrong filename
