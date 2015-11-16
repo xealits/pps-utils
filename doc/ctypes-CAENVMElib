@@ -1,0 +1,54 @@
+$ python
+Python 2.6.6 (r266:84292, Jul 23 2015, 00:03:09) 
+[GCC 4.4.7 20120313 (Red Hat 4.4.7-11)] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from ctypes import *
+>>> cdll.LoadLibrary( "/usr/lib/libCAENVME.so.2.41" )
+<CDLL '/usr/lib/libCAENVME.so.2.41', handle aa8160 at 7fc7cd97e790>
+>>> 
+>>> l = CDLL("/usr/lib/libCAENVME.so.2.41" )
+>>> 
+>>> x = c_long()
+>>> 
+>>> l.CAENVME_Init(1, 0, 0, byref(x))
+0
+>>> x
+c_long(0)
+>>> c = create_string_buffer('\000' * 32)
+>>> c
+<ctypes.c_char_Array_33 object at 0x7fc7cda20dd0>
+>>> print(c)
+<ctypes.c_char_Array_33 object at 0x7fc7cda20dd0>
+>>> c[0]
+'\x00'
+>>> c[1]
+'\x00'
+>>> c[2]
+'\x00'
+>>> c[3]
+'\x00'
+>>> ''.join(c)
+'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+>>> 
+>>> 
+>>> l.CAENVME_BoardFWRelease( x, c )
+0
+>>> c
+<ctypes.c_char_Array_33 object at 0x7fc7cda20dd0>
+>>> ''.join(c)
+'2.14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+>>> c[0]
+'2'
+>>> c[1]
+'.'
+>>> c[2]
+'1'
+>>> c[3]
+'4'
+>>> c[4]
+'\x00'
+>>> 
+>>> 
+>>> 
+>>> exit()
+
