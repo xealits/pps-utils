@@ -1,5 +1,9 @@
-from ctypes import CDLL, cdll, byref, c_int32, c_char, create_string_buffer
+from ctypes import CDLL, cdll, byref, create_string_buffer
+from ctypes import POINTER, c_uint32, c_int32, c_int, c_char, c_char_p
 from threading import Thread, Event
+
+c_uint32_p = POINTER(c_uint32)
+c_int32_p = POINTER(c_int32)
 #import Pyro4
 
 from CAENVMEdefinitions import *
@@ -22,6 +26,7 @@ class PreVMEOperator(CDLL):
         super(PreVMEOperator, self).__init__(libpath)
         # TODO: move the lib initialization further to init?
         #       to make library calls unavailable here?
+        set_ctype_restrictions(super(PreVMEOperator, self)) # set input restrictions for CAEN calls?
         # store the path
         self.libpath = libpath
         self.device_handler = None # ctypes long
@@ -55,6 +60,7 @@ class PreVMEOperator(CDLL):
         # when everything is ready switch the state to the initialized operator
         self.__class__ = VMEOperator
         # TODO: maybe one can redefine the methods for VME-bus calls to have device_handler in default?
+
 
     # TODO: how to pack all this identical calls into one loop?
     # TODO: and how to add the ctypes input type restrictions?
@@ -247,6 +253,86 @@ class PreVMEOperator(CDLL):
     def CAENVME_BLTReadWait(self, *args):
         return super(VMEOperator, self).CAENVME_BLTReadWait(self.device_handler, *args)
 
+    def set_ctype_restrictions(self, lo):
+        # TODO: lo should be the initialized object/class
+        #       with the ctype representation of the lib calls
+        #       and setting the argument check now should fix it for VMEOperator as well
+        # first argument is the device handler everywhere
+        lo.CAENVME_BoardFWRelease.argtypes = [c_int32, c_char_p]
+        # common pattern: the second argument is the address
+        #                 the third -- data to be passed
+        #                 then address modifier and datawidth
+        lo.CAENVME_DriverRelease.argtypes = [c_int32, c_uint32]
+        lo.CAENVME_DeviceReset.argtypes = [c_int32]
+        lo.CAENVME_End.argtypes = [c_int32]
+        lo.CAENVME_ReadCycle.argtypes = [c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_RMWCycle.argtypes = [c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_WriteCycle.argtypes = [c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+
+        lo.CAENVME_MultiRead.argtypes = [c_int32, c_uint32_p, c_uint32_p, c_int32, POINTER(CVAddressModifier_t), POINTER(CVDataWidth_t), POINTER(CVErrorCodes_t)]
+        lo.CAENVME_MultiWrite.argtypes = [c_int32, c_uint32_p, c_uint32_p, c_int32, POINTER(CVAddressModifier_t), POINTER(CVDataWidth_t), POINTER(CVErrorCodes_t)]
+
+        lo.CAENVME_BLTReadCycle.argtypes =      [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
+        lo.CAENVME_FIFOBLTReadCycle.argtypes =  [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
+
+        lo.CAENVME_MBLTReadCycle.argtypes =     [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
+        lo.CAENVME_FIFOMBLTReadCycle.argtypes = [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
+
+        lo.CAENVME_BLTWriteCycle.argtypes =      [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
+        lo.CAENVME_FIFOBLTWriteCycle.argtypes =  [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
+
+        lo.CAENVME_MBLTWriteCycle.argtypes =     [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
+        lo.CAENVME_FIFOMBLTWriteCycle.argtypes = [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
+
+        lo.CAENVME_ADOCycle.argtypes =  [c_int32, c_uint32, CVAddressModifier_t]
+        lo.CAENVME_ADOHCycle.argtypes = [c_int32, c_uint32, CVAddressModifier_t]
+
+        '''
+        lo.CAENVME_IACKCycle.argtypes = [c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_IRQCheck.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_IRQEnable.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_IRQDisable.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_IRQWait.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_SetPulserConf.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_SetScalerConf.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_SetOutputConf.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_SetInputConf.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_GetPulserConf.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_GetScalerConf.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_GetOutputConf.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_GetInputConf.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_ReadRegister.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_WriteRegister.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_SetOutputRegister.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_ClearOutputRegister.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_PulseOutputRegister.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_ReadDisplay.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_SetArbiterType.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_SetRequesterType.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_SetReleaseType.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_SetBusReqLevel.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_SetTimeout.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_SetLocationMonitor.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_SetFIFOMode.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_GetArbiterType.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_GetRequesterType.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_GetReleaseType.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_GetBusReqLevel.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_GetTimeout.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_GetFIFOMode.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_SystemReset.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_ResetScalerCount.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_EnableScalerGate.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_DisableScalerGate.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_StartPulser.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_StopPulser.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_WriteFlashPage.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_ReadFlashPage.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_EraseFlashPage.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_BLTReadAsync.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        lo.CAENVME_BLTReadWait.argtypes = [ c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
+        '''
+
  
 
 class VMEOperator(CDLL):
@@ -273,7 +359,7 @@ class VMEOperator(CDLL):
         end CAENVMElib operation -- call CAENVME_End(self.device_handler)
         '''
 
-        err = self.CAENVME_End( )
+        err = self.CAENVME_End()
         if err != cvSuccess:
             print("CAENVME_Init error %s" % err)
             return err
