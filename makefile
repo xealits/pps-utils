@@ -62,6 +62,15 @@ CAENVMElib.o: CAENVMElib.c
 	gcc $(CFLAGS) $(CFLAGS_TEST) -c $<
 
 
+
+# for the real lib there is no .c file -- only shared lib
+# gcc $(CFLAGS) $(CFLAGS_TEST) -c $<
+CAEN.lib/test/libCAENVME.so: CAENVMElib.c
+	#          > [ TEST libCAENVME.so @ CAEN.lib/test/libCAENVME.so ]
+	gcc $(CFLAGS) $(CFLAGS_TEST) -shared -o CAEN.lib/test/libCAENVME.so -Wall -Werror -g -fpic $<
+
+
+
 clear:
 	rm *.o
 
