@@ -69,3 +69,26 @@ cvTimeoutError =  c_int(-5)
 
 
 
+# CVBoardTypes_t
+# CVDataWidth_t
+# CVAddressModifier_t
+# CVErrorCodes_t
+CVPulserSelect_t = c_int
+CVOutputSelect_t = c_int
+CVInputSelect_t = c_int
+CVIOSources_t = c_int
+CVTimeUnits_t = c_int
+CVLEDPolarity_t = c_int
+CVIOPolarity_t = c_int
+CVRegisters_t = c_int
+CVStatusRegisterBits_t = c_int
+CVInputRegisterBits_t = c_int
+CVOutputRegisterBits_t = c_int
+CVArbiterTypes_t = c_int
+CVRequesterTypes_t = c_int
+CVReleaseTypes_t = c_int
+CVBusReqLevels_t = c_int
+CVIRQLevels_t = c_int
+CVVMETimeouts_t = c_int
+CVDisplay_t = c_int
+
