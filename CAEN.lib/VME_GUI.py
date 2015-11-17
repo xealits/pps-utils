@@ -2,7 +2,7 @@
 from PySide.QtDeclarative import QDeclarativeView
 from PySide.QtCore import QUrl, Signal#, QThread
 from PySide import QtGui
-from sys import argv, exit
+import sys
 from threading import Thread, Event
 import Pyro4
 
@@ -40,13 +40,13 @@ class Graph(QDeclarativeView):
 
 
 if __name__ == '__main__':
-    if len(argv) > 2 and argv[1] == "standalone":
+    if len(sys.argv) > 2 and sys.argv[1] == "standalone":
         # the 1 argument == standalone
         # the 2 argument is the path to the VME calls library
-        print("Starting as standalone with libpath at %s" % argv[2])
+        print("Starting as standalone with libpath at %s" % sys.argv[2])
 
         import VME_operator
-        v = VME_operator.PreVMEOperator(argv[2])
+        v = VME_operator.PreVMEOperator(sys.argv[2])
 
         dem_oper = Pyro4.Daemon()
         uri_oper = dem_oper.register(v)
@@ -60,7 +60,9 @@ if __name__ == '__main__':
     else:
         print("Starting as a coprocess, the VME operator process should be running.")
         # get the URI of the running process with VME oper
-        uri_oper = input("Enter the URI of the VME operator process:").strip()
+        # TODO: set according to Python2/3 version:
+        # uri_oper = input("Enter the URI of the VME operator process:").strip()
+        uri_oper = raw_input("Enter the URI of the VME operator process:").strip()
     # here the VME oper should run in a Pyro4 daemon process/thread on the system
     # and uri_oper should link to the daemon
 
@@ -75,4 +77,4 @@ if __name__ == '__main__':
 
     print("Everything should be ready. Rolling the graphics!")
     # run graph in the main thread
-    exit(g.run())
+    sys.exit(g.run())
