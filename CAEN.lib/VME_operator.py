@@ -1,5 +1,5 @@
 from ctypes import CDLL, cdll, byref, create_string_buffer
-from ctypes import POINTER, c_uint32, c_int32, c_int, c_short, c_char, c_char_p
+from ctypes import POINTER, pointer, c_uint32, c_int32, c_int, c_short, c_char, c_char_p
 import Pyro4
 import sys
 # from threading import Thread, Event
@@ -244,8 +244,8 @@ class VMEOperator(Broadcaster):
 
 
 
-[c_int32, c_uint32_p, c_uint32_p, c_int32, POINTER(CVAddressModifier_t), POINTER(CVDataWidth_t), POINTER(CVErrorCodes_t)]
-[c_int32, c_uint32_p, c_uint32_p, c_int32, POINTER(CVAddressModifier_t), POINTER(CVDataWidth_t), POINTER(CVErrorCodes_t)]
+
+
 [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
 [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
 [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
@@ -335,31 +335,65 @@ class VMEOperator(Broadcaster):
                                           CVDataWidth_t(data_width))
         return (err.value, s.value)
 
- 
-    def CAENVME_MultiRead(self, addresses, output_len, address_modifiers, data_widths, error_codes):
-        '''CAENVME_MultiRead(self, addresses, output_len, address_modifiers, data_widths, error_codes)
+
+    # TODO: here the output is int32 (according to the header), why?
+    def CAENVME_MultiRead(self, addresses, address_modifiers, data_widths):
+        '''CAENVME_MultiRead(self, addresses, address_modifiers, data_widths)
 
         [c_int32, c_uint32_p, c_uint32_p, c_int32, POINTER(CVAddressModifier_t), POINTER(CVDataWidth_t), POINTER(CVErrorCodes_t)]
         '''
-        ads = (c_uint32 * len(address))(*addresses)
-        ad_mods = (CVAddressModifier_t * len(addresses))(*address_modifiers)
-        dt_wths = (CVDataWidth_t * len(addresses))(*data_widths)
-        e_codes = (CVErrorCodes_t * len(addresses))(*error_codes)
-        s = (c_uint32 * output_len)(*range(output_len))
+        length = len(addresses)
+        ads = (c_uint32 * length)(*addresses)
+        ad_mods = (CVAddressModifier_t * length)(*address_modifiers)
+        dt_wths = (CVDataWidth_t  * length)(*data_widths)
+        e_codes = (CVErrorCodes_t * length)(*range(length))
+        s = (c_uint32 * length)(*range(length))
         err = self.lib.CAENVME_MultiRead(self.device_handler,
                                          ads,
                                          s,
+                                         c_int(length),
                                          ad_mods,
                                          dt_wths,
                                          e_codes)
         return (err.value, list(s), list(e_codes))
         # return self.lib.CAENVME_MultiRead(self.device_handler, *args)
 
-    def CAENVME_MultiWrite(self, *args):
-        return self.lib.CAENVME_MultiWrite(self.device_handler, *args)
+    def CAENVME_MultiWrite(self, addresses, data, address_modifiers, data_widths):
+        '''CAENVME_MultiWrite(self, addresses, data, address_modifiers, data_widths)
 
-    def CAENVME_BLTReadCycle(self, *args):
-        return self.lib.CAENVME_BLTReadCycle(self.device_handler, *args)
+        [c_int32, c_uint32_p, c_uint32_p, c_int32, POINTER(CVAddressModifier_t), POINTER(CVDataWidth_t), POINTER(CVErrorCodes_t)]
+        '''
+        length = len(addresses)
+        ads = (c_uint32 * length)(*addresses)
+        ad_mods = (CVAddressModifier_t * length)(*address_modifiers)
+        dt_wths = (CVDataWidth_t  * length)(*data_widths)
+        e_codes = (CVErrorCodes_t * length)(*range(length))
+        s = (c_uint32 * length)(*data)
+        err = self.lib.CAENVME_MultiRead(self.device_handler,
+                                         ads,
+                                         s,
+                                         c_int(length),
+                                         ad_mods,
+                                         dt_wths,
+                                         e_codes)
+        return (err.value, list(e_codes))
+
+    def CAENVME_BLTReadCycle(self, address, size, address_modifier, data_width):
+        '''CAENVME_BLTReadCycle(self, address, size, address_modifier, data_width)
+
+        size -- size of transfer in bytes
+        [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
+        '''
+        s = create_string_buffer(b'0'*size)
+        count = c_int(-1)
+        err = self.lib.CAENVME_BLTReadCycle(self.device_handler,
+                                            c_uint32(address),
+                                            s,
+                                            CVAddressModifier_t(address_modifier),
+                                            CVDataWidth_t(data_width),
+                                            pointer(count))
+        return (err.value, s.value, count.value)
+        # return self.lib.CAENVME_BLTReadCycle(self.device_handler, *args)
 
     def CAENVME_FIFOBLTReadCycle(self, *args):
         return self.lib.CAENVME_FIFOBLTReadCycle(self.device_handler, *args)
