@@ -26,6 +26,11 @@ class Broadcaster(object):
     def add_listener(self, uri):
         self.listeners.append(Pyro4.Proxy(uri))
 
+    def pyro_connection_echo(self, *args):
+        print(args)
+        print(type(args))
+        return args
+
 
 class PreVMEOperator(Broadcaster):
     """docstring for PreVMEOperator"""
@@ -49,11 +54,6 @@ class PreVMEOperator(Broadcaster):
         self.buffers =  None # ctypes string buffer for reading VME output and the io pipes
         # at the end we have: the lib-connection is ready,
         # the operations are not initialized yet
-
-    def pyro_connection_test(self, x):
-        print(x)
-        print(type(x))
-        pass
 
     # TODO: check link and bdnum -- where is the definition, what's the type, what are the values?
     def init(self, board_type=cvV2718.value, link=0, bdnum=0):
@@ -82,13 +82,12 @@ class PreVMEOperator(Broadcaster):
             return err
 
         self.device_handler = dev
-        # TODO: how to shove the devhandler into the CAENVME calls automaticaly?
 
         # TODO: initialize IO buffers self.buffers
 
         # when everything is ready switch the state to the initialized operator
         self.__class__ = VMEOperator
-        # TODO: maybe one can redefine the methods for VME-bus calls to have device_handler in default?
+
 
     # exposing the lib methods to Pyro connection
     def CAENVME_SWRelease(self, output_len):

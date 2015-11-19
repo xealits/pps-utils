@@ -58,6 +58,7 @@ if __name__ == '__main__':
         thread_oper.daemon = True                      # Daemonize thread
         thread_oper.start()                            # Start the execution
     else:
+        # TODO: start the GUI and ask for URI in there
         print("Starting as a coprocess, the VME operator process should be running.")
         # get the URI of the running process with VME oper
         # TODO: set according to Python2/3 version:
