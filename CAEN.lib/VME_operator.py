@@ -95,7 +95,8 @@ class PreVMEOperator(Broadcaster):
         s = create_string_buffer(b'0'*output_len)
         # TODO: should one use bytes or strings? in Python2/3?
         err = self.lib.CAENVME_SWRelease(s)
-        return (err.value, s.value)
+        # TODO: err always is Python's int? Or output type can be set to ctypes?
+        return (err, s.value)
 
     def set_ctype_restrictions(self):
         # TODO: self.lib should be the initialized object/class
@@ -234,11 +235,11 @@ class VMEOperator(Broadcaster):
 
     # exposing the lib methods to Pyro connection
     # SWRelease is duplicated in both classe to not create a common class (yet)
-    def SWRelease(self, *args):
+    def CAENVME_SWRelease(self, output_len):
         s = create_string_buffer(b'0'*output_len)
         # TODO: should one use bytes or strings? in Python2/3?
         err = self.lib.CAENVME_SWRelease(s)
-        return (err.value, s.value)
+        return (err, s.value)
 
 
 
@@ -246,16 +247,16 @@ class VMEOperator(Broadcaster):
 
 
 
-[c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
-[c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
-[c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
-[c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
-[c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
-[c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
-[c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
-[c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
-[c_int32, c_uint32, CVAddressModifier_t]
-[c_int32, c_uint32, CVAddressModifier_t]
+    #[c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
+    #[c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
+    #[c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
+    #[c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
+    #[c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
+    #[c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
+    #[c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
+    #[c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
+    #[c_int32, c_uint32, CVAddressModifier_t]
+    #[c_int32, c_uint32, CVAddressModifier_t]
 
 
     # TODO: how to pack all this identical calls into one loop?
@@ -271,7 +272,7 @@ class VMEOperator(Broadcaster):
         # TODO: should one use bytes or strings? in Python2/3?
         err = self.lib.CAENVME_BoardFWRelease(self.device_handler, s)
 
-        return (err.value, s.value)
+        return (err, s.value)
 
     def CAENVME_DriverRelease(self, output_len):
         '''CAENVME_DriverRelease(self)
@@ -280,7 +281,7 @@ class VMEOperator(Broadcaster):
         '''
         s = create_string_buffer(b'0'*output_len)
         err = self.lib.CAENVME_DriverRelease(self.device_handler, s)
-        return (err.value, s.value)
+        return (err, s.value)
 
     def CAENVME_DeviceReset(self):
         '''CAENVME_DeviceReset(self)
@@ -294,7 +295,7 @@ class VMEOperator(Broadcaster):
 
         [c_int32]
         '''
-        return (self.lib.CAENVME_End(self.device_handler).value)
+        return (self.lib.CAENVME_End(self.device_handler))
 
     def CAENVME_ReadCycle(self, address, output_len, address_modifier, data_width):
         '''CAENVME_ReadCycle(self, address, output_len, address_modifier, data_width)
@@ -307,7 +308,7 @@ class VMEOperator(Broadcaster):
                                          s,
                                          CVAddressModifier_t(address_modifier),
                                          CVDataWidth_t(data_width))
-        return (err.value, s.value)
+        return (err, s.value)
 
     def CAENVME_RMWCycle(self, address, output_len, address_modifier, data_width):
         '''CAENVME_RMWCycle(self, address, output_len, address_modifier, data_width)
@@ -320,7 +321,7 @@ class VMEOperator(Broadcaster):
                                         s,
                                         CVAddressModifier_t(address_modifier),
                                         CVDataWidth_t(data_width))
-        return (err.value, s.value)
+        return (err, s.value)
 
     def CAENVME_WriteCycle(self, address, output_len, address_modifier, data_width):
         '''CAENVME_WriteCycle(self, address, output_len, address_modifier, data_width)
@@ -333,7 +334,7 @@ class VMEOperator(Broadcaster):
                                           s,
                                           CVAddressModifier_t(address_modifier),
                                           CVDataWidth_t(data_width))
-        return (err.value, s.value)
+        return (err, s.value)
 
 
     # TODO: here the output is int32 (according to the header), why?
@@ -355,7 +356,7 @@ class VMEOperator(Broadcaster):
                                          ad_mods,
                                          dt_wths,
                                          e_codes)
-        return (err.value, list(s), list(e_codes))
+        return (err, list(s), list(e_codes))
         # return self.lib.CAENVME_MultiRead(self.device_handler, *args)
 
     def CAENVME_MultiWrite(self, addresses, data, address_modifiers, data_widths):
@@ -376,7 +377,7 @@ class VMEOperator(Broadcaster):
                                          ad_mods,
                                          dt_wths,
                                          e_codes)
-        return (err.value, list(e_codes))
+        return (err, list(e_codes))
 
     def CAENVME_BLTReadCycle(self, address, size, address_modifier, data_width):
         '''CAENVME_BLTReadCycle(self, address, size, address_modifier, data_width)
@@ -392,7 +393,7 @@ class VMEOperator(Broadcaster):
                                             CVAddressModifier_t(address_modifier),
                                             CVDataWidth_t(data_width),
                                             pointer(count))
-        return (err.value, s.value, count.value)
+        return (err, s.value, count.value)
         # return self.lib.CAENVME_BLTReadCycle(self.device_handler, *args)
 
     def CAENVME_FIFOBLTReadCycle(self, *args):

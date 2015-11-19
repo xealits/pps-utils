@@ -19,7 +19,7 @@ CAENVME_API CAENVME_Init(CVBoardTypes BdType, short Link, short BdNum, int32_t *
 // CAENVME_API CAENVME_BoardFWRelease(long handle, char *FWRel) {
 CAENVME_API CAENVME_BoardFWRelease(int32_t handle, char *FWRel) {
 	CAENVME_API res = cvSuccess;
-	FWRel[0] = '1', FWRel[1] = '2', FWRel[2] = '3', FWRel[3] = '\0';
+	FWRel[0] = '11', FWRel[1] = '22', FWRel[2] = '33', FWRel[3] = '\0';
 	return(res);
 }
 
@@ -30,6 +30,7 @@ CAENVME_API CAENVME_ReadCycle( int32_t bridge_handler,
 							   CVDataWidth data_width ) {
 	CAENVME_API res = cvSuccess;
 	unsigned char * bytes_to_read = Data;
+	// TODO: are these ints really converted to bytes, i.e. unsigned chars?
 	bytes_to_read[0] = 128, bytes_to_read[1] = 64, bytes_to_read[2] = 32, bytes_to_read[3] = 255;
 	bytes_to_read[4] = 1, bytes_to_read[5] = 255, bytes_to_read[6] = 32, bytes_to_read[7] = 16;
 	return(res);	
