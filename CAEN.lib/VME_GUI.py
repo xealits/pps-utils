@@ -10,14 +10,16 @@ import Pyro4
 class Graph(QDeclarativeView):
     """docstring for Graph"""
 
-    def __init__(self, oper_uri):
+    def __init__(self, oper_uri, qml_file_path):
         self.oper_uri = oper_uri
         self.oper = Pyro4.Proxy(oper_uri)
+        self.oper._pyroGetMetadata() # refresh the connection
+        # TODO: when and how might it fail?
 
         self.app = QtGui.QApplication(sys.argv)
         QDeclarativeView.__init__(self)
         self.setWindowTitle("DAQ Window")
-        self.setSource(QUrl.fromLocalFile('view.qml'))
+        self.setSource(QUrl.fromLocalFile(qml_file_path))
         # adapt to the given window size:
         self.setResizeMode(QDeclarativeView.SizeRootObjectToView)
 
@@ -70,7 +72,7 @@ if __name__ == '__main__':
     # create the graph object
     # it spawns a thread with the Pyro4 daemon sharing access to the object
     print("Creating the GUI object..")
-    g = Graph(uri_oper)
+    g = Graph(uri_oper, 'view.qml')
 
     # pass g.uri back to the oper
     print("Finishing connection setup to the VME operator..")

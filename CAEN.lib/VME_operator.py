@@ -5,7 +5,7 @@ import sys
 # from threading import Thread, Event
 
 # TODO: how to serialize ctypes objects?
-Pyro4.config.SERIALIZER = 'pickle'
+# Pyro4.config.SERIALIZER = 'pickle'
 
 c_uint32_p = POINTER(c_uint32)
 c_int32_p = POINTER(c_int32)
