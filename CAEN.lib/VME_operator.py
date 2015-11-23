@@ -301,7 +301,7 @@ class VMEOperator(Broadcaster):
 
         [c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
         '''
-        s = create_string_buffer(b'0'*output_len)
+        s = create_string_buffer(b'0'*output_len) # TODO: data_width probably sets the output len
         err = self.lib.CAENVME_ReadCycle(self.device_handler,
                                          c_uint32(address),
                                          s,
@@ -322,12 +322,15 @@ class VMEOperator(Broadcaster):
                                         CVDataWidth_t(data_width))
         return (err, s.value)
 
-    def CAENVME_WriteCycle(self, address, output_len, address_modifier, data_width):
-        '''CAENVME_WriteCycle(self, address, output_len, address_modifier, data_width)
+    def CAENVME_WriteCycle(self, address, data, address_modifier, data_width):
+        '''CAENVME_WriteCycle(self, address, data, address_modifier, data_width)
+
+        data is bytes, i.e. b'\x02', b'\x02\x04\xa3\x1f' etc (TODO: it is both Python2/3 compatible)
 
         [c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
         '''
-        s = create_string_buffer(b'0'*output_len)
+        # s = create_string_buffer(b'0'*output_len)
+        s = create_string_buffer(data)
         err = self.lib.CAENVME_WriteCycle(self.device_handler,
                                           c_uint32(address),
                                           s,
@@ -361,6 +364,10 @@ class VMEOperator(Broadcaster):
     def CAENVME_MultiWrite(self, addresses, data, address_modifiers, data_widths):
         '''CAENVME_MultiWrite(self, addresses, data, address_modifiers, data_widths)
 
+        TODO: for some reason multiwrite requires uint32 on input
+        thus data has to be a list of integers
+        TODO: make compatible with bytes input
+
         [c_int32, c_uint32_p, c_uint32_p, c_int32, POINTER(CVAddressModifier_t), POINTER(CVDataWidth_t), POINTER(CVErrorCodes_t)]
         '''
         length = len(addresses)
@@ -369,7 +376,7 @@ class VMEOperator(Broadcaster):
         dt_wths = (CVDataWidth_t  * length)(*data_widths)
         e_codes = (CVErrorCodes_t * length)(*range(length))
         s = (c_uint32 * length)(*data)
-        err = self.lib.CAENVME_MultiRead(self.device_handler,
+        err = self.lib.CAENVME_MultiWrite(self.device_handler,
                                          ads,
                                          s,
                                          c_int(length),
@@ -384,43 +391,161 @@ class VMEOperator(Broadcaster):
         size -- size of transfer in bytes
         [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
         '''
-        s = create_string_buffer(b'0'*size)
+        s = create_string_buffer(b'0'*size*data_width)
         count = c_int(-1)
         err = self.lib.CAENVME_BLTReadCycle(self.device_handler,
                                             c_uint32(address),
                                             s,
+                                            c_int(size),
                                             CVAddressModifier_t(address_modifier),
                                             CVDataWidth_t(data_width),
                                             pointer(count))
         return (err, s.value, count.value)
         # return self.lib.CAENVME_BLTReadCycle(self.device_handler, *args)
 
-    def CAENVME_FIFOBLTReadCycle(self, *args):
-        return self.lib.CAENVME_FIFOBLTReadCycle(self.device_handler, *args)
+    def CAENVME_FIFOBLTReadCycle(self, address, size, address_modifier, data_width):
+        '''CAENVME_FIFOBLTReadCycle(self, address, size, address_modifier, data_width)
 
-    def CAENVME_MBLTReadCycle(self, *args):
-        return self.lib.CAENVME_MBLTReadCycle(self.device_handler, *args)
+        size -- size of transfer in bytes
+        (int32_t Handle, uint32_t Address, void *Buffer,
+         int Size, CVAddressModifier AM, CVDataWidth DW, int *count)
+        [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
+        '''
+        s = create_string_buffer(b'0'*size*data_width)
+        count = c_int(-1)
+        err = self.lib.CAENVME_FIFOBLTReadCycle(self.device_handler,
+                                            c_uint32(address),
+                                            s,
+                                            c_int(size),
+                                            CVAddressModifier_t(address_modifier),
+                                            CVDataWidth_t(data_width),
+                                            pointer(count))
+        return (err, s.value, count.value)
 
-    def CAENVME_FIFOMBLTReadCycle(self, *args):
-        return self.lib.CAENVME_FIFOMBLTReadCycle(self.device_handler, *args)
+    '''
+    # self.lib.CAENVME_MBLTReadCycle.argtypes     = [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
+    # self.lib.CAENVME_FIFOMBLTReadCycle.argtypes = [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
+    # self.lib.CAENVME_BLTWriteCycle.argtypes     = [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
+    # self.lib.CAENVME_FIFOBLTWriteCycle.argtypes = [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
+    # self.lib.CAENVME_MBLTWriteCycle.argtypes     = [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
+    # self.lib.CAENVME_FIFOMBLTWriteCycle.argtypes = [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
+    self.lib.CAENVME_ADOCycle.argtypes  = [c_int32, c_uint32, CVAddressModifier_t]
+    self.lib.CAENVME_ADOHCycle.argtypes = [c_int32, c_uint32, CVAddressModifier_t]
+    '''
 
-    def CAENVME_BLTWriteCycle(self, *args):
-        return self.lib.CAENVME_BLTWriteCycle(self.device_handler, *args)
+    def CAENVME_MBLTReadCycle(self, address, size, address_modifier):
+        '''CAENVME_MBLTReadCycle(self, address, size, address_modifier)
 
-    def CAENVME_FIFOBLTWriteCycle(self, *args):
-        return self.lib.CAENVME_FIFOBLTWriteCycle(self.device_handler, *args)
+        [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
+        '''
+        s = create_string_buffer(b'0'*size)
+        count = c_int(-1)
+        err = self.lib.CAENVME_MBLTReadCycle(self.device_handler,
+                                            c_uint32(address),
+                                            s,
+                                            c_int(size),
+                                            CVAddressModifier_t(address_modifier),
+                                            pointer(count))
+        return (err, s.value, count.value)
 
-    def CAENVME_MBLTWriteCycle(self, *args):
-        return self.lib.CAENVME_MBLTWriteCycle(self.device_handler, *args)
+    def CAENVME_FIFOMBLTReadCycle(self, address, size, address_modifier):
+        '''CAENVME_FIFOMBLTReadCycle(self, address, size, address_modifier)
 
-    def CAENVME_FIFOMBLTWriteCycle(self, *args):
-        return self.lib.CAENVME_FIFOMBLTWriteCycle(self.device_handler, *args)
+        [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
+        '''
+        s = create_string_buffer(b'0'*size)
+        count = c_int(-1)
+        err = self.lib.CAENVME_FIFOMBLTReadCycle(self.device_handler,
+                                            c_uint32(address),
+                                            s,
+                                            c_int(size),
+                                            CVAddressModifier_t(address_modifier),
+                                            pointer(count))
+        return (err, s.value, count.value)
 
-    def CAENVME_ADOCycle(self, *args):
-        return self.lib.CAENVME_ADOCycle(self.device_handler, *args)
+    def CAENVME_BLTWriteCycle(self, address, data, size, address_modifier, data_width):
+        '''CAENVME_BLTWriteCycle(self, address, data, address_modifier, data_width)
 
-    def CAENVME_ADOHCycle(self, *args):
-        return self.lib.CAENVME_ADOHCycle(self.device_handler, *args)
+        data is bytes, i.e. b'\x02', b'\x02\x04\xa3\x1f' etc (TODO: it is both Python2/3 compatible)
+        size is int, amount of bytes to write (thus data can have 0 character)
+
+        [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
+        '''
+        # s = create_string_buffer(b'0'*size*data_width)
+        s = create_string_buffer(data[:size] + b'0'*(size-len(data)))
+        count = c_int(-1)
+        # print("calling")
+        err = self.lib.CAENVME_BLTWriteCycle(self.device_handler,
+                                            c_uint32(address),
+                                            s,
+                                            c_int(size),
+                                            CVAddressModifier_t(address_modifier),
+                                            CVDataWidth_t(data_width),
+                                            pointer(count))
+        # print("done")
+        return (err, count.value)
+
+    def CAENVME_FIFOBLTWriteCycle(self, address, data, size, address_modifier, data_width):
+        '''CAENVME_FIFOBLTWriteCycle(self, address, data, size, address_modifier, data_width)
+
+        [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
+        '''
+        s = create_string_buffer(data[:size] + b'0'*(size-len(data)))
+        count = c_int(-1)
+        err = self.lib.CAENVME_FIFOBLTWriteCycle(self.device_handler,
+                                            c_uint32(address),
+                                            s,
+                                            c_int(size),
+                                            CVAddressModifier_t(address_modifier),
+                                            CVDataWidth_t(data_width),
+                                            pointer(count))
+        return (err, count.value)
+
+    def CAENVME_MBLTWriteCycle(self, address, data, size, address_modifier):
+        '''CAENVME_MBLTWriteCycle(self, address, data, size, address_modifier)
+
+        [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
+        '''
+        s = create_string_buffer(data[:size] + b'0'*(size-len(data)))
+        count = c_int(-1)
+        err = self.lib.CAENVME_MBLTWriteCycle(self.device_handler,
+                                            c_uint32(address),
+                                            s,
+                                            c_int(size),
+                                            CVAddressModifier_t(address_modifier),
+                                            pointer(count))
+        return (err, count.value)
+
+    def CAENVME_FIFOMBLTWriteCycle(self, address, data, size, address_modifier):
+        '''CAENVME_FIFOMBLTWriteCycle(self, address, data, size, address_modifier)
+
+        [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
+        '''
+        s = create_string_buffer(data[:size] + b'0'*(size-len(data)))
+        count = c_int(-1)
+        err = self.lib.CAENVME_FIFOMBLTWriteCycle(self.device_handler,
+                                            c_uint32(address),
+                                            s,
+                                            c_int(size),
+                                            CVAddressModifier_t(address_modifier),
+                                            pointer(count))
+        return (err, count.value)
+
+
+    def CAENVME_ADOCycle(self, address, address_modifier):
+        '''CAENVME_ADOCycle(self, address, address_modifier)
+
+        [c_int32, c_uint32, CVAddressModifier_t]
+        '''
+        return self.lib.CAENVME_ADOCycle(self.device_handler, c_uint32(address), CVAddressModifier_t(address_modifier))
+
+    def CAENVME_ADOHCycle(self, address, address_modifier):
+        '''CAENVME_ADOHCycle(self, address, address_modifier)
+
+        [c_int32, c_uint32, CVAddressModifier_t]
+        '''
+        return self.lib.CAENVME_ADOHCycle(self.device_handler, c_uint32(address), CVAddressModifier_t(address_modifier))
+
 
 '''
     def CAENVME_IACKCycle(self, *args):
