@@ -15,6 +15,12 @@ Rectangle {
    // property real command_status_height: // command line + margin
 
    property color monokai_dark_grey: "#272822"
+   property color monokai_dark_dark_grey: "#171813" // "#1D2023"
+   property color dark_dark_grey: "#292d31" // "#272822"
+   property color dark_dark_blue_grey: "#132330"
+   property color dark_dark_grey_cold: "#0D1318"
+   property color almost_black: '#05080B'
+   property color dark_dark_brown: '#1E140C'
    property color monokai_light_grey: "#757575"
    property color monokai_orange: "#FD971F"
    property color cartography_dark_brown: "#662506"
@@ -24,6 +30,48 @@ Rectangle {
    property color light_yellow_cold: "#edf8b1"
    property color light_yellow_green: "#c7e9b4"
    property color error_red: "#f03b20"
+   property color green_blue: '#7fcdbb'
+   property color blue_wave: "#5DBCD2"
+   property color blue_wave_light: "#90DAE5"
+   property color blue_sky: "#01295C"
+   property color yellow_sand: "#F8E3AC"
+   property color orange_sand: "#F18533"
+   property color rasty_brown: "#2A120D"
+   property color dark_shadow: "#080E0E"
+
+
+   property color name1: "#C63D0F"
+   property color name2: "#3B3738"
+//   "#FDF3E7"
+//   "#7E8F7C"
+//
+//   "#558C89"
+//   "#74AFAD"
+//   "#D9853B"
+//   "#ECECEA"
+//
+//   "#7D1935"
+//   "#4A96AD"
+//   "#F5F3EE"
+//
+//   "#E44424"
+//   "#67BCDB"
+//   "#A2AB58"
+//
+   property color pumpkin: "#d35400"
+   property color carrot: "#e67e22"
+   property color midnight_blue: "#2c3e50"
+   property color wet_asphalt: "#34495e"
+   property color sun_flower: "#f1c40f"
+   property color clouds: "#ecf0f1"
+   property color silver: "#bdc3c7"
+   property color concrete: "#95a5a6"
+   property color asbestos: "#7f8c8d"
+   property color alizarin: "#e74c3c"
+   property color pomegranate: "#c0392b"
+   property color belize_hole: "#2980b9"
+   property color green_sea: "#16a085"
+
 
    property color log_background: monokai_dark_grey // brown "#662506" // "red" // Monokai dark grey "#272822"
    property color log_general_text: cartography_light_yellow // "black"
@@ -55,7 +103,7 @@ Rectangle {
           // width: window.width
           height: ui_height
           border { width: 4; color: cartography_dark_brown}
-          color: cartography_brown // cartography_dark_brown //
+          color: monokai_dark_grey // cartography_dark_brown // cartography_brown //
           anchors {bottom: parent.bottom;
                    left: parent.left;
                    right: parent.right}
@@ -65,7 +113,7 @@ Rectangle {
             id: ui_comm
             width: parent.width
             height: 30
-            color: "red"
+            color: cartography_dark_brown // "red"
             border.width: 1
             anchors {top: parent.top;
                      left: parent.left}
@@ -79,7 +127,7 @@ Rectangle {
                        left: parent.left;
                        right: parent.right;
                        leftMargin: 100}
-              color: message_status_color
+              color: cartography_dark_brown // message_status_color
             }
 
           // TODO: somehow do it text-centered way
@@ -167,7 +215,8 @@ Rectangle {
    Rectangle {
     id: options
     width: options_width
-    color: monokai_light_grey
+    color: monokai_dark_dark_grey // log_background // monokai_light_grey
+    border.width: 2
     anchors {top: parent.top;
              left: parent.left;
              bottom: parent.bottom}
