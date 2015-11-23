@@ -330,7 +330,8 @@ class VMEOperator(Broadcaster):
         [c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t]
         '''
         # s = create_string_buffer(b'0'*output_len)
-        s = create_string_buffer(data)
+        # bytes should convert strings and bytes/bytearrays to ctypes-compatible format in both Python2/3
+        s = create_string_buffer(bytes(data))
         err = self.lib.CAENVME_WriteCycle(self.device_handler,
                                           c_uint32(address),
                                           s,
@@ -472,7 +473,8 @@ class VMEOperator(Broadcaster):
         [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
         '''
         # s = create_string_buffer(b'0'*size*data_width)
-        s = create_string_buffer(data[:size] + b'0'*(size-len(data)))
+        # bytes should convert strings and bytes/bytearrays to ctypes-compatible format in both Python2/3
+        s = create_string_buffer(bytes(data[:size] + b'0'*(size-len(data))))
         count = c_int(-1)
         # print("calling")
         err = self.lib.CAENVME_BLTWriteCycle(self.device_handler,
@@ -490,7 +492,7 @@ class VMEOperator(Broadcaster):
 
         [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)]
         '''
-        s = create_string_buffer(data[:size] + b'0'*(size-len(data)))
+        s = create_string_buffer(bytes(data[:size] + b'0'*(size-len(data))))
         count = c_int(-1)
         err = self.lib.CAENVME_FIFOBLTWriteCycle(self.device_handler,
                                             c_uint32(address),
@@ -506,7 +508,7 @@ class VMEOperator(Broadcaster):
 
         [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
         '''
-        s = create_string_buffer(data[:size] + b'0'*(size-len(data)))
+        s = create_string_buffer(bytes(data[:size] + b'0'*(size-len(data))))
         count = c_int(-1)
         err = self.lib.CAENVME_MBLTWriteCycle(self.device_handler,
                                             c_uint32(address),
@@ -521,7 +523,7 @@ class VMEOperator(Broadcaster):
 
         [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)]
         '''
-        s = create_string_buffer(data[:size] + b'0'*(size-len(data)))
+        s = create_string_buffer(bytes(data[:size] + b'0'*(size-len(data))))
         count = c_int(-1)
         err = self.lib.CAENVME_FIFOMBLTWriteCycle(self.device_handler,
                                             c_uint32(address),
