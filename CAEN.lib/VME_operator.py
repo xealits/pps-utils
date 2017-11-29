@@ -18,6 +18,28 @@ from CAENVMEdefinitions import *
 #cdll.LoadLibrary( "./libCAENVME.so" )
 #lib = CDLL( "./libCAENVME.so" )
 
+"""The Next Plan
+
+Make bunch of classes, implementing the state space of the operator.
+Remove Broadcaster. Substitute with some "general state" class?
+(Implementing the error of calling to nonedefined lib object,
+ signal handling etc?)
+
+There are 3 states at the moment:
+* not init lib,
+* init lib and ready for calls,
+* "stream-reading" given addresses to the an array of files with status prompts on stderr/stdout?.
+
+The last one requires bunch of configs:
+* how big are buffers? how many of them?
+* the streams for out files?
+* the target addresses? how are they mapped to outs? how are they read (in what range by `block` is there `fifo`)?
+* after how many writes/how much time some prompt is done?
+* also -- should there be programmable hooks for writes? for writing the clock etc?
+* maybe one should do it with status prompts?
+
+"""
+
 class Broadcaster(object):
     """docstring for Broadcaster"""
     def __init__(self, listeners_uris=None):
