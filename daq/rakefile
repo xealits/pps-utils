@@ -101,6 +101,19 @@ rule '.so' => proc {|t| FileList[t.ext '.c'] + FileList[t.ext '.deps/*.h']} do |
 end
 
 desc 'build test substitution library for CAENVME'
-task 'test_caen_lib' => 'test_caen_lib/libCAENVME.so'
+file 'build/libCAENVMEtest.so' => 'test_caen_lib/libCAENVME.so' do |task|
+  #puts task.name
+  #puts task.prerequisites.first
+  cp task.prerequisites.first, task.name
+end
 
+desc 'run recorder 1 "simple_loop"'
+file 'build/simple_loop' => %w[build record_run/simple_loop.o] do |task|
+    #sh "clang #{include_dirs_option} record_run/simple_loop.o -o #{task.name}"
+    puts task.name
+    sh "clang record_run/simple_loop.o -o #{task.name}"
+end
+
+desc 'build all daq processes, shared libraries, scripts in build/ directory'
+task :default => %w[build build/simple_loop build/libCAENVMEtest.so]
 
