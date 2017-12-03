@@ -1,6 +1,9 @@
+require 'pathname'
 
 desc "probably I'll put some of final binaries here"
 directory 'build'
+
+project_dir = Dir.pwd
 
 include_dirs_option = ' -I include/ '
 
@@ -83,7 +86,26 @@ end
 # depends on source and all headers in file.deps/*
 # compiles file.o in the same directory as source
 rule '.o' => proc {|t| FileList[t.ext '.c'] + FileList[t.ext '.deps/*.h']} do |task|
-  sh "clang -I #{task.name.ext '.deps/'} -c #{task.prerequisites.first} -o #{task.name}"
+  # so, this is the C Compilation Stuff, everything is not simple
+  # go to the directory of the code
+  # (the tradition is to just have everything in current directory and compile everything in current directory)
+  # (and the tools are tuned to the tradition)
+
+  dir = File.dirname task.name
+  #puts dir
+  #path = Pathname task.name
+  #dir  = path.dirname
+  #source = Pathname (task.prerequisites.first).relative_path_from dir
+  cur_dir = Dir.pwd
+  cd dir
+  ext  = File.extname  task.name
+  deps = File.basename task.name, ext
+  outp = File.basename task.name
+  source = File.basename task.prerequisites.first
+  #puts deps+'.deps/'
+
+  sh "clang -I #{deps+'.deps/'} -c #{source} -o #{outp}"
+  cd cur_dir # cd back
   # and copy it to build
   #cp task.name, 'build/'
   # no, in fact 'build' directory now breaks the logic of the project...
@@ -96,8 +118,24 @@ end
 #
 
 #clang -fPIC -shared CAENVMElib.c -o libCAENVME.so -I deps/
-rule '.so' => proc {|t| FileList[t.ext '.c'] + FileList[t.ext '.deps/*.h']} do |task|
-  sh "clang -fPIC -I #{task.name.ext '.deps/'} -shared #{task.prerequisites.first} -o #{task.name}"
+rule '.so' => proc {|t| FileList[t.ext '.c'] + FileList[t.ext '.deps/*.h'] + FileList[t.ext '.deps/*.so'].map{|f| p=Pathname(f); (p.dirname + p.readlink).to_s}} do |task|
+  # shared libraries might depend on other shared libs
+  # and they have to be declared in the compiled bin
+  # let them be declared relationally using .deps/ dir
+
+  dir = File.dirname task.name
+
+  cur_dir = Dir.pwd
+  cd dir
+
+  ext  = File.extname  task.name
+  deps = File.basename task.name, ext
+  deps += '.deps/'
+  outp = File.basename task.name
+  source = File.basename task.prerequisites.first
+
+  sh "clang -fPIC -I #{deps} -shared #{source} -o #{outp} " + Dir[deps+'*.so'].join(' ')
+  cd cur_dir # cd back
 end
 
 desc 'build test substitution library for CAENVME'
@@ -107,13 +145,21 @@ file 'build/libCAENVMEtest.so' => 'test_caen_lib/libCAENVME.so' do |task|
   cp task.prerequisites.first, task.name
 end
 
-desc 'run recorder 1 "simple_loop"'
-file 'build/simple_loop' => %w[build record_run/simple_loop.o] do |task|
-    #sh "clang #{include_dirs_option} record_run/simple_loop.o -o #{task.name}"
-    puts task.name
-    sh "clang record_run/simple_loop.o -o #{task.name}"
-end
+# no! this is more complicated: I need to move .deps with .so also.....
+#desc 'build the record run funcs .so and the .py wrapper'
+#file 'build/record_run.so' => %[record_run/simple_loop.so record_run/simple_loop.py] do |task|
+#  #puts task.name
+#  #puts task.prerequisites.first
+#  cp task.prerequisites.first, task.name
+#end
+
+#desc 'run recorder 1 "simple_loop"'
+#file 'build/simple_loop' => %w[build record_run/simple_loop.o] do |task|
+#    #sh "clang #{include_dirs_option} record_run/simple_loop.o -o #{task.name}"
+#    puts task.name
+#    sh "clang record_run/simple_loop.o -o #{task.name}"
+#end
 
 desc 'build all daq processes, shared libraries, scripts in build/ directory'
-task :default => %w[build build/simple_loop build/libCAENVMEtest.so]
+task :default => %w[build build/libCAENVMEtest.so record_run/simple_loop.so]
 
