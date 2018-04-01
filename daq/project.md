@@ -1,4 +1,5 @@
-correct C organization -- with rake and meaningful directories
+# correct C organization -- with rake and meaningful directories
+
 it's similar to python packages structure
 
 what to be done for the project, in C, in Python and in linux?
@@ -29,7 +30,14 @@ I need:
   text-readable output is a human interface feature, it's like GUI, but done in ASCII typography
 
 
-Some organizational ideas:
+
+
+
+
+
+
+
+# Some organizational ideas
 
 * linux (unix?) is an interpreter
   it is a programmable environment on its' own,
