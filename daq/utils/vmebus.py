@@ -233,12 +233,15 @@ vme_bus_datasheet = {
                            [CVAddressModifier_t, 'AM'], [CVDataWidth_t, 'DW']],
 }
 
-def typecheck_call(func_name, args):
+def typecheck_call(func_name, args, check_out=False):
     # skip the ret type
     data_types = [(par_def[0], len(par_def) > 2 and par_def[2] == 'out') for par_def in vme_bus_datasheet[func_name][1:]]
     logging.debug(data_types)
     logging.debug(args)
-    return len(data_types) == len(args) and all(isinstance(arg, data_t) and d_out == a_out for (data_t, d_out), (arg, a_out) in zip(data_types, args))
+    if check_out:
+        return len(data_types) == len(args) and all(isinstance(arg, data_t) and d_out == a_out for (data_t, d_out), (arg, a_out) in zip(data_types, args))
+    else:
+        return len(data_types) == len(args) and all(isinstance(arg, data_t) for (data_t, _), (arg, _) in zip(data_types, args))
 
 prelim_vme_bus_datasheet_full = {
 'CAENVME_SWRelease':      [c_char_p],
