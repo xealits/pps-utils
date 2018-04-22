@@ -121,9 +121,9 @@ def parse_vme_arguments(comline_args):
 
         logging.debug(arg)
 
-        isOut = arg[:4] == 'out,'
-        if isOut:
-            arg = arg[4:]
+        #isOut = arg[:4] == 'out,'
+        #if isOut:
+        #    arg = arg[4:]
 
 
         logging.debug(arg)
@@ -174,7 +174,8 @@ def parse_vme_arguments(comline_args):
             logging.error('unknown argument arg: %s' % arg)
             continue
 
-        arguments.append((the_argument, isOut))
+        #arguments.append((the_argument, isOut))
+        arguments.append(the_argument)
         #if 'out' in arg:
         #    output_arguments.append(the_argument)
 
@@ -222,26 +223,23 @@ class param_def:
 
 
 vme_bus_datasheet = {
-'CAENVME_SWRelease':      [[CAENVME_API, 'ret'], [c_char_p, 'SwRel' , 'out']],
-'CAENVME_End':            [[CAENVME_API, 'ret'], [c_int32,  'Handle', ]],
-'CAENVME_DeviceReset':    [[CAENVME_API, 'ret'], [c_int32,  'Handle', ]],
-'CAENVME_BoardFWRelease': [[CAENVME_API, 'ret'], [c_int32,  'Handle', ], [c_char_p, 'FWRel',   'out']],
-'CAENVME_DriverRelease':  [[CAENVME_API, 'ret'], [c_int32,  'Handle', ], [c_char_p, 'Rel'  ,   'out']],
-'CAENVME_ReadCycle':      [[CAENVME_API, 'ret'], [c_int32,  'Handle', ], [c_uint32, 'Address', ], [c_char_p, 'Data', 'out'],
-                           [CVAddressModifier_t, 'AM'], [CVDataWidth_t, 'DW']],
-'CAENVME_WriteCycle':     [[CAENVME_API, 'ret'], [c_int32,  'Handle', ], [c_uint32, 'Address', ], [c_char_p, 'Data'],
-                           [CVAddressModifier_t, 'AM'], [CVDataWidth_t, 'DW']],
+'CAENVME_SWRelease'      : [[CAENVME_API, 'ret'], [c_char_p, 'SwRel' , 'out']],
+'CAENVME_End'            : [[CAENVME_API, 'ret'], [c_int32,  'Handle', ]],
+'CAENVME_DeviceReset'    : [[CAENVME_API, 'ret'], [c_int32,  'Handle', ]],
+'CAENVME_BoardFWRelease' : [[CAENVME_API, 'ret'], [c_int32,  'Handle', ], [c_char_p, 'FWRel',   'out']],
+'CAENVME_DriverRelease'  : [[CAENVME_API, 'ret'], [c_int32,  'Handle', ], [c_char_p, 'Rel'  ,   'out']],
+'CAENVME_ReadCycle'      : [[CAENVME_API, 'ret'], [c_int32,  'Handle', ], [c_uint32, 'Address', ], [c_char_p, 'Data', 'out'],
+                            [CVAddressModifier_t, 'AM'], [CVDataWidth_t, 'DW']],
+'CAENVME_WriteCycle'     : [[CAENVME_API, 'ret'], [c_int32,  'Handle', ], [c_uint32, 'Address', ], [c_char_p, 'Data'],
+                            [CVAddressModifier_t, 'AM'], [CVDataWidth_t, 'DW']],
 }
 
-def typecheck_call(func_name, args, check_out=False):
+def typecheck_call(func_name, args):
     # skip the ret type
-    data_types = [(par_def[0], len(par_def) > 2 and par_def[2] == 'out') for par_def in vme_bus_datasheet[func_name][1:]]
+    data_types = [par_def[0] for par_def in vme_bus_datasheet[func_name][1:]]
     logging.debug(data_types)
     logging.debug(args)
-    if check_out:
-        return len(data_types) == len(args) and all(isinstance(arg, data_t) and d_out == a_out for (data_t, d_out), (arg, a_out) in zip(data_types, args))
-    else:
-        return len(data_types) == len(args) and all(isinstance(arg, data_t) for (data_t, _), (arg, _) in zip(data_types, args))
+    return len(data_types) == len(args) and all(isinstance(arg, data_t) for data_t, arg in zip(data_types, args))
 
 prelim_vme_bus_datasheet_full = {
 'CAENVME_SWRelease':      [c_char_p],
@@ -279,9 +277,9 @@ if __name__ == '__main__':
         formatter_class = argparse.RawDescriptionHelpFormatter,
         description = "run VME bus command",
         epilog = """Examples:
-    python3 vmebus.py CAENVME_SWRelease out,charp=________
-    python3 vmebus.py CAENVME_BoardFWRelease out,charp=________
-    python3 vmebus.py CAENVME_ReadCycle uint32=0xa10 out,charp=______________ AM=2 DW=3
+    python3 vmebus.py CAENVME_SWRelease charp=________
+    python3 vmebus.py CAENVME_BoardFWRelease charp=________
+    python3 vmebus.py CAENVME_ReadCycle uint32=0xa10 charp=______________ AM=2 DW=3
     """)
 
 
@@ -331,10 +329,13 @@ if __name__ == '__main__':
     arguments = parse_vme_arguments(args.arguments)
     # only 1 VMElib call does not require dev
     if args.command != 'CAENVME_SWRelease':
-        arguments = [(dev, False)] + arguments
+        arguments = [dev] + arguments
 
     #err = eval('lib.%s(*arguments)' % args.command)
     assert typecheck_call(args.command, arguments)
+    #arguments = [(a, len(vme_bus_datasheet[args.command])>2 and vme_bus_datasheet[args.command][2] == 'out') for a in arguments]
+    arguments = [(a, len(arg_def)>2 and arg_def[2] == 'out') for a, arg_def in zip(arguments, vme_bus_datasheet[args.command][1:])]
+    logging.debug(repr(arguments))
     err, output_arguments = call_lib(lib, args.command, arguments)
     logging.debug('error: %s' % err)
     for a in output_arguments:
