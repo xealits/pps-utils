@@ -6,6 +6,7 @@ from ctypes import c_int
 # TODO: one should parse it from the actual header
 # TODO: maybe it's better to keep them in some special type?
 
+
 # CVBoardTypes
 CVBoardTypes_t = c_int
 cvV1718 = c_int(0)
@@ -66,6 +67,8 @@ cvCommError =  c_int(-2)
 cvGenericError =  c_int(-3)
 cvInvalidParam =  c_int(-4)
 cvTimeoutError =  c_int(-5)
+
+CAENVME_API = CVErrorCodes_t
 
 
 

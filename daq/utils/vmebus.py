@@ -3,9 +3,11 @@ import argparse
 from ctypes import CDLL, cdll, byref, create_string_buffer
 from ctypes import POINTER, pointer, c_uint32, c_int32, c_int, c_short, c_char, c_char_p
 import CAENVMEdefinitions
-from CAENVMEdefinitions import cvSuccess, CVBoardTypes_t, CVAddressModifier_t, CVDataWidth_t
+from CAENVMEdefinitions import cvSuccess, CVBoardTypes_t, CVAddressModifier_t, CVDataWidth_t, CVErrorCodes_t, CAENVME_API
 import sys
 
+c_uint32_p = POINTER(c_uint32)
+c_int32_p = POINTER(c_int32)
 
 
 '''
@@ -117,16 +119,22 @@ def parse_vme_arguments(comline_args):
         #    arguments.append((dev, False))
         #    continue
 
+        logging.debug(arg)
+
         isOut = arg[:4] == 'out,'
         if isOut:
             arg = arg[4:]
 
+
+        logging.debug(arg)
         # <type>[:<N vect>][=<init val>]
         if '=' in arg:
             arg, init_val = arg.split('=')
         else:
             init_val = None
 
+
+        logging.debug(arg)
         # <type>[:<N vect>]
         if ':' in arg:
             arg, N_vect = arg.split(':')
@@ -134,8 +142,12 @@ def parse_vme_arguments(comline_args):
         else:
             N_vect = None
 
+
+        logging.debug(arg)
         # char:20
-        if arg == 'char' and N_vect:
+        if arg == 'charp':
+            the_argument = c_char_p(bytes(init_val, 'utf'))
+        elif arg == 'char' and N_vect:
             the_argument = create_string_buffer(b'0'*N_vect)
         elif arg == 'char':
             init_val = bytes(init_val, 'utf') if init_val else b'0'
@@ -173,7 +185,7 @@ def call_lib(lib, func_name, args):
     '''call_lib(lib, func_name, args):
 
     запрашивает: 1) библиотеку для вызова, 2) имя функции
-    3) параметры + какие из них <output> -- (par, isOut? = True/False)
+    3) параметры + какие из них <output>, args = [(par, isOut? = True/False)]
     возвращает (<ret>, [<outs>])
     '''
 
@@ -186,16 +198,88 @@ def call_lib(lib, func_name, args):
     return ret, outs
 
 
+'''
+type test and other lib info
+(electronics datasheet or other programmable desciption of the interface, like `objdump` etc)
+
+пока две простые вещи, те же что и в вызовах функций
+1) проверка типа
+2) + какие параметры выводные
+
+записать их в ямл и парсить ямл
+-- позже из ямла можно будет сделать спец. объекты и пр.
+в целом это универсальный и читаемый формат, подходит для спецификации
+
+но пока запишем в питоновские структуры
+'''
+
+class param_def:
+    "defines type, name (nickname, description) and out/in/ret behaviour of parameter"
+
+    def __init__(self, c_type, name=None, behaviour='in'):
+        #
+        self.c_type = c_type
+
+
+vme_bus_datasheet = {
+'CAENVME_SWRelease':      [[CAENVME_API, 'ret'], [c_char_p, 'SwRel' , 'out']],
+'CAENVME_End':            [[CAENVME_API, 'ret'], [c_int32,  'Handle', ]],
+'CAENVME_DeviceReset':    [[CAENVME_API, 'ret'], [c_int32,  'Handle', ]],
+'CAENVME_BoardFWRelease': [[CAENVME_API, 'ret'], [c_int32,  'Handle', ], [c_char_p, 'FWRel',   'out']],
+'CAENVME_DriverRelease':  [[CAENVME_API, 'ret'], [c_int32,  'Handle', ], [c_char_p, 'Rel'  ,   'out']],
+'CAENVME_ReadCycle':      [[CAENVME_API, 'ret'], [c_int32,  'Handle', ], [c_uint32, 'Address', ], [c_char_p, 'Data', 'out'],
+                           [CVAddressModifier_t, 'AM'], [CVDataWidth_t, 'DW']],
+'CAENVME_WriteCycle':     [[CAENVME_API, 'ret'], [c_int32,  'Handle', ], [c_uint32, 'Address', ], [c_char_p, 'Data'],
+                           [CVAddressModifier_t, 'AM'], [CVDataWidth_t, 'DW']],
+}
+
+def typecheck_call(func_name, args):
+    # skip the ret type
+    data_types = [(par_def[0], len(par_def) > 2 and par_def[2] == 'out') for par_def in vme_bus_datasheet[func_name][1:]]
+    logging.debug(data_types)
+    logging.debug(args)
+    return len(data_types) == len(args) and all(isinstance(arg, data_t) and d_out == a_out for (data_t, d_out), (arg, a_out) in zip(data_types, args))
+
+prelim_vme_bus_datasheet_full = {
+'CAENVME_SWRelease':      [c_char_p],
+'CAENVME_End':            [c_int32],
+'CAENVME_BoardFWRelease': [c_int32, c_char_p],
+'CAENVME_DriverRelease':  [c_int32, c_char_p],
+'CAENVME_DeviceReset':    [c_int32],
+'CAENVME_ReadCycle':      [c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t],
+'CAENVME_RMWCycle':       [c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t],
+'CAENVME_WriteCycle':     [c_int32, c_uint32, c_char_p, CVAddressModifier_t, CVDataWidth_t],
+
+'CAENVME_MultiRead':      [c_int32, c_uint32_p, c_uint32_p, c_int32, POINTER(CVAddressModifier_t), POINTER(CVDataWidth_t), POINTER(CVErrorCodes_t)],
+'CAENVME_MultiWrite':     [c_int32, c_uint32_p, c_uint32_p, c_int32, POINTER(CVAddressModifier_t), POINTER(CVDataWidth_t), POINTER(CVErrorCodes_t)],
+
+'CAENVME_BLTReadCycle':   [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)],
+'CAENVME_FIFOBLTReadCycle': [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)],
+
+'CAENVME_MBLTReadCycle':     [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)],
+'CAENVME_FIFOMBLTReadCycle': [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)],
+
+'CAENVME_BLTWriteCycle':     [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)],
+'CAENVME_FIFOBLTWriteCycle': [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, CVDataWidth_t, POINTER(c_int)],
+
+'CAENVME_MBLTWriteCycle':     [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)],
+'CAENVME_FIFOMBLTWriteCycle': [c_int32, c_uint32, c_char_p, c_int, CVAddressModifier_t, POINTER(c_int)],
+
+'CAENVME_ADOCycle':  [c_int32, c_uint32, CVAddressModifier_t],
+'CAENVME_ADOHCycle': [c_int32, c_uint32, CVAddressModifier_t],
+}
+
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         formatter_class = argparse.RawDescriptionHelpFormatter,
         description = "run VME bus command",
         epilog = """Examples:
-    python3 vmebus.py CAENVME_SWRelease out,char:8
-    python3 vmebus.py CAENVME_BoardFWRelease out,char:128
-    python3 vmebus.py CAENVME_ReadCycle uint32=0xa10 out,char:32 AM=2 DW=3
-    """
-        )
+    python3 vmebus.py CAENVME_SWRelease out,charp=________
+    python3 vmebus.py CAENVME_BoardFWRelease out,charp=________
+    python3 vmebus.py CAENVME_ReadCycle uint32=0xa10 out,charp=______________ AM=2 DW=3
+    """)
 
 
     parser.add_argument("command", help="command name")
@@ -247,6 +331,7 @@ if __name__ == '__main__':
         arguments = [(dev, False)] + arguments
 
     #err = eval('lib.%s(*arguments)' % args.command)
+    assert typecheck_call(args.command, arguments)
     err, output_arguments = call_lib(lib, args.command, arguments)
     logging.debug('error: %s' % err)
     for a in output_arguments:
@@ -257,4 +342,7 @@ if __name__ == '__main__':
     logging.debug('VME end w. error: %s' % err)
 
     sys.exit(err)
+
+else:
+    logging.basicConfig(level=logging.DEBUG)
 
