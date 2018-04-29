@@ -9,6 +9,11 @@ import sys
 c_uint32_p = POINTER(c_uint32)
 c_int32_p = POINTER(c_int32)
 
+# our precious library
+libpath = './libCAENVME.so'
+cdll.LoadLibrary( libpath ) # TODO: if error -- break
+lib = CDLL( libpath )
+
 
 '''
 a prototype for just talking on the VME bus
@@ -102,9 +107,9 @@ def parse_vme_arguments(comline_args):
 
     minilang parsing comline arguments into C function calls
 
-    [out,]<type>[:<N vect>][=<init val>]
+    <type>[:<N vect>][=<init val>]
 
-    returns [(arg, isOut?)]
+    returns [arg]
     '''
 
     arguments = []
@@ -214,14 +219,6 @@ type test and other lib info
 но пока запишем в питоновские структуры
 '''
 
-class param_def:
-    "defines type, name (nickname, description) and out/in/ret behaviour of parameter"
-
-    def __init__(self, c_type, name=None, behaviour='in'):
-        #
-        self.c_type = c_type
-
-
 vme_bus_datasheet = {
 'CAENVME_SWRelease'      : [[CAENVME_API, 'ret'], [c_char_p, 'SwRel' , 'out']],
 'CAENVME_End'            : [[CAENVME_API, 'ret'], [c_int32,  'Handle', ]],
@@ -236,10 +233,70 @@ vme_bus_datasheet = {
 
 def typecheck_call(func_name, args):
     # skip the ret type
-    data_types = [par_def[0] for par_def in vme_bus_datasheet[func_name][1:]]
+    func_def = vme_bus_datasheet[func_name]
+    data_types = [par_def[0] for par_def in func_def[1:]]
     logging.debug(data_types)
     logging.debug(args)
     return len(data_types) == len(args) and all(isinstance(arg, data_t) for data_t, arg in zip(data_types, args))
+
+
+# из-за консольности всё передаются текстом и не видно смысла в хардкодинге питоном, с полным объектом
+# что если просто функция вызова с 1 лишь дефаултом -- dev?
+# нужна одна система для обоих случаев
+# пока сделаем текстовый метод "call", из которого потом сгенерируем отдельные методы
+
+class VMEBus:
+    "defines type, name (nickname, description) and out/in/ret behaviour of parameter"
+
+    def __init__(self, lib, board_type=CAENVMEdefinitions.cvV2718.value, link=0, bdnum=0):
+        """VMEBus(lib)
+
+	creates bus connection
+
+        board_type - this is the VME bridge board
+        link  
+        bdnum 
+        """
+
+        self._lib = lib
+        # this is the device number of out connection
+        # usually it gets = 0
+        self.dev = c_int32()
+
+        err = lib.CAENVME_Init(CVBoardTypes_t(board_type), link, bdnum, byref(self.dev))
+        logging.debug('VME init w. error: %s' % err)
+        if err != cvSuccess.value:
+            logging.error("VME_Init error %s" % err)
+            sys.exit(1)
+
+        # and generate methods from the datasheet?
+
+    # now, it would be nice to have help messages for each call here...
+    def call(self, command: str, arguments: list):
+        """
+
+        command 
+        arguments = [<arg>]
+        """
+
+        if command != 'CAENVME_SWRelease':
+            arguments = [self.dev] + arguments
+
+        assert typecheck_call(command, arguments)
+        arguments = [(a, len(arg_def)>2 and arg_def[2] == 'out') for a, arg_def in zip(arguments, vme_bus_datasheet[command][1:])]
+        logging.debug(repr(arguments))
+
+        err, output_arguments = call_lib(lib, command, arguments)
+        #logging.debug('error: %s' % err)
+        #for a in output_arguments:
+        #    print(a.value)
+        return err, output_arguments
+
+    def __del__(self):
+
+        # exit
+        err = self._lib.CAENVME_End(self.dev)
+        logging.debug('VME end w. error: %s' % err)
 
 prelim_vme_bus_datasheet_full = {
 'CAENVME_SWRelease':      [c_char_p],
@@ -295,10 +352,6 @@ if __name__ == '__main__':
     else:
         logging.basicConfig(level=logging.INFO)
 
-    libpath = './libCAENVME.so'
-    cdll.LoadLibrary( libpath ) # TODO: if error -- break
-    lib = CDLL( libpath )
-
     # parameters to init board
     '''
           [in]  BdType    : The model of the bridge (V1718/V2718).
@@ -307,6 +360,7 @@ if __name__ == '__main__':
           [out] Handle    : The handle that identifies the device.
     '''
 
+    '''
     board_type = CAENVMEdefinitions.cvV2718.value # this is the VME bridge board
     link  = 0
     bdnum = 0 # board number in the link -- what does that mean?
@@ -319,12 +373,16 @@ if __name__ == '__main__':
     if err != cvSuccess.value:
         logging.error("VME_Init error %s" % err)
         sys.exit(1)
+    '''
+
+    bus = VMEBus(lib)
 
     ## release versions
     #output_len = 16 # bytes
     #s = create_string_buffer(b'0'*output_len)
     #err = lib.CAENVME_SWRelease(s)
 
+    '''
     # VME EVAL
     arguments = parse_vme_arguments(args.arguments)
     # only 1 VMElib call does not require dev
@@ -337,16 +395,13 @@ if __name__ == '__main__':
     arguments = [(a, len(arg_def)>2 and arg_def[2] == 'out') for a, arg_def in zip(arguments, vme_bus_datasheet[args.command][1:])]
     logging.debug(repr(arguments))
     err, output_arguments = call_lib(lib, args.command, arguments)
+    '''
+
+    err, output_arguments = bus.call(args.command, parse_vme_arguments(args.arguments))
+
     logging.debug('error: %s' % err)
     for a in output_arguments:
         print(a.value)
 
-    # exit
-    err = lib.CAENVME_End(dev)
-    logging.debug('VME end w. error: %s' % err)
-
     sys.exit(err)
-
-else:
-    logging.basicConfig(level=logging.DEBUG)
 
