@@ -10,77 +10,7 @@ include_dirs_option = ' -I include/ '
 # file dependencies don't go into namespaces!
 # only tasks do
 
-=begin
-could a rule do it?
-but here each source file has different dependancy on headers..........
-more discipline idea:
-1. a src file has only 1 header with all its' dependencies
-2. thus the header dependencies are put into these headers..
-   one encodes them in rakefile
-   or parses somehow
--- it seems as an unreasonable additional step, unnecessary file?
-   no
-   look at count_words, which uses the counter.o object -- it needs only the header of the object
-   in general:
-   1. the header is what the object provides to users
-   2. internal dependencies of the object are included into its' source and not added to header
 
-so, what is really done for build:
-1. source.c file includes some headers -- that's the internal dependencies of the file,
-   its' source.h file is not its' dependency, it is its' interface, the extern definitions or users
-2. for building the source file depends on the internal headers,
-   one should parse the file to get all dependency filenames
-   and then where they are found? the actual dependency header file?
-   and where is the link to the actual source of the dependecy?
-   (I'm inclined to flatter, simpler system..)
-   What does `include <foo.h>` says is "I use that object, whatever functions it provides -- include them".
-   The source file could actually declare each function. but project-wise you just say "that object".
-   Then project-wise you at least know the location of that object.
-   It is constant thing.
-   (It is the interface of the object, even if you build it with some test version of the object,
-   the interface is the same.)
-   So, the only question is how to define this dependency project-wise?
-   In the build system with `-Iinclude_path` or in the filesystem paths and `#include "path/dep.h"`?
-   I think for programming it should be kept explicitly directly in the code in the `#include` statements.
-   Then the dir-names should be more specific than `src` and `include`.
-3. In principle, separate `src_dependency.h` header is useful:
-   * less lines to parse dependencies from
-   * kind of cleaner maintenance?
-
-In principle, the header system should show "interfaces of the system that's the most important!!!" as everybody says.
-The dependency graph and stuff..
-But parsing of headers or source files... Or of the GNU Makefile... Or even of rakefile...
-
-What if put dependencies with symlinks in:
-  ...
-  src.c
-  src_depns/*.h
-
-then:
-1. easy `rule` in rakefile for this
-2. easy to see the project even with `tree` or similar stuff
-
-OK, doing it.
-
-#include <counter.h>
-clang -I src/count_words.deps/ -c src/count_words.c -o count_words.o
-
-and
-
-#include "count_words.deps/counter.h"
-clang -I src/ -c src/count_words.c -o count_words.o
-
-both work
-
-in any case the rule for rake should be simple
-something like:
-
-rule '.c' [build_dir] => '.deps/*.h' do |task|
-    clang -I '.deps/' -c task.name -o build_dir/task_base_filename.o
-end
-
--- yeah.. the problem is '.c' is rule for _target_file_, not a general task "to compile all these .c"
-=end
 
 #namespace :building do # does nothing? are rules defined in namespace?
 # depends on source and all headers in file.deps/*
@@ -102,9 +32,9 @@ rule '.o' => proc {|t| FileList[t.ext '.c'] + FileList[t.ext '.deps/*.h']} do |t
   deps = File.basename task.name, ext
   outp = File.basename task.name
   source = File.basename task.prerequisites.first
-  #puts deps+'.deps/'
 
-  sh "clang -I #{deps+'.deps/'} -c #{source} -o #{outp}"
+  # notice. all compilation is done with fPIC
+  sh "clang -fPIC -I #{deps+'.deps/'} -c #{source} -o #{outp}"
   cd cur_dir # cd back
   # and copy it to build
   #cp task.name, 'build/'
@@ -117,11 +47,15 @@ end
 # why on earth?
 #
 
+
+=begin
 #clang -fPIC -shared CAENVMElib.c -o libCAENVME.so -I deps/
 rule '.so' => proc {|t| FileList[t.ext '.c'] + FileList[t.ext '.deps/*.h'] + FileList[t.ext '.deps/*.so'].map{|f| p=Pathname(f); (p.dirname + p.readlink).to_s}} do |task|
   # shared libraries might depend on other shared libs
   # and they have to be declared in the compiled bin
   # let them be declared relationally using .deps/ dir
+
+  # TODO: what if so file is not there? who sets the links?
 
   dir = File.dirname task.name
 
@@ -137,29 +71,58 @@ rule '.so' => proc {|t| FileList[t.ext '.c'] + FileList[t.ext '.deps/*.h'] + Fil
   sh "clang -fPIC -I #{deps} -shared #{source} -o #{outp} " + Dir[deps+'*.so'].join(' ')
   cd cur_dir # cd back
 end
+=end
+
+=begin
+just do all compiation with fPIC for now
+rule '.so' => proc {|t| FileList[t.ext '.c'] + FileList[t.ext '.deps/*.h']} do |task|
+
+  dir = File.dirname task.name
+
+  cur_dir = Dir.pwd
+  cd dir
+
+  ext  = File.extname  task.name
+  deps = File.basename task.name, ext
+  outp = File.basename task.name
+  source = File.basename task.prerequisites.first
+
+  sh "clang -fPIC -I #{deps+'.deps/'} -c #{source} -o #{outp}"
+  cd cur_dir # cd back
+end
+=end
+
 
 desc 'build test substitution library for CAENVME'
-file 'build/libCAENVMEtest.so' => 'test_caen_lib/libCAENVME.so' do |task|
+file 'build/libCAENVME.so' => 'test_caen_lib/libCAENVMEtest.o' do |task|
   #puts task.name
   #puts task.prerequisites.first
-  cp task.prerequisites.first, task.name
+  sh "clang -fPIC -shared #{task.prerequisites.first} -o #{task.name}"
 end
 
-# no! this is more complicated: I need to move .deps with .so also.....
-#desc 'build the record run funcs .so and the .py wrapper'
-#file 'build/record_run.so' => %[record_run/simple_loop.so record_run/simple_loop.py] do |task|
-#  #puts task.name
-#  #puts task.prerequisites.first
-#  cp task.prerequisites.first, task.name
-#end
+desc 'build the run .so lib'
+file 'build/simple_loop.so' => ['build/libCAENVME.so', 'record_run/simple_loop.o'] do |task|
+  #puts task.prerequisites
+  #puts task.prerequisites.class
+  #puts task.prerequisites.join(' ')
 
-#desc 'run recorder 1 "simple_loop"'
-#file 'build/simple_loop' => %w[build record_run/simple_loop.o] do |task|
-#    #sh "clang #{include_dirs_option} record_run/simple_loop.o -o #{task.name}"
-#    puts task.name
-#    sh "clang record_run/simple_loop.o -o #{task.name}"
-#end
+  #sh "clang -fPIC -shared #{task.prerequisites.join(' ')} -o #{task.name} -Wl,-rpath,\"\\$ORIGIN/\""
+  # or \$ORIGIN/simple_loop.deps/:\$ORIGIN/
+
+  cp 'record_run/simple_loop.o', 'build/'
+
+  cd 'build/'
+  sh "clang -fPIC -shared libCAENVME.so simple_loop.o -o simple_loop.so -Wl,-rpath,\"\\$ORIGIN/\""
+  rm 'simple_loop.o'
+  cd '../'
+end
+
+desc 'rm record_run/simple_loop.so test_caen_lib/libCAENVME.so build/*'
+task :clean do
+  l = FileList['build/*', 'record_run/simple_loop.so', 'test_caen_lib/libCAENVME.so']
+  rm l.select {|f| File.file?(f)}
+end
 
 desc 'build all daq processes, shared libraries, scripts in build/ directory'
-task :default => %w[build build/libCAENVMEtest.so record_run/simple_loop.so]
+task :default => %w[build build/libCAENVME.so build/simple_loop.so]
 

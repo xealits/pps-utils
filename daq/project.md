@@ -15,10 +15,21 @@ I need:
   and some additional features:
     variable amount and set of cards in the process (without recompilation/change of source for this),
     with good log/reporting with full listing of card configs,
-    (in principle the preliminary checks, config listing can be obtained from by a Python module, then the module launches the C "run-process")
+   (in principle the preliminary checks,
+    config listing can be obtained from by a Python module,
+    then the module launches the C "run-process")
     visible current parameters of the running process
-    (not sure if it's possible -- with shared memory? just environment variables? it would be nice to expose exactly the numbers in memory, which the process runs on)
+   (not sure if it's possible -- with shared memory? just environment variables?
+    it would be nice to expose exactly the numbers in memory, which the process runs on)
     changing output to memory disk for speed
+* "a run" is a comlpex operation, for programming and running operations it must be taken apart into simple parts;
+  a run configures the boards, logs the config, reads them, logs errors and full buffers, writes the binary
+  -- the "reader" part can be separated from configuration;
+  operations should have a unified and flexible system, there are diverse tasks,
+  like testing and running in all kinds of configurations,
+  but they should be carried out in similar manner, without "context-switching" between different systems;
+  the system is naturally composed of all the physical and software parts:
+  the bus, the boards, the CPU with linux and daq
 * a set of linux administration facilities to organize this in 1 DAQ system, text interface for now
   (logging, control group)
 * the gui is for later
@@ -34,10 +45,40 @@ I need:
 
 
 
+# parts of the daq system
+
+the bus, the boards, the CPU with linux and daq
+
+
+## the bus
+
+special class for the bus?
+
+A C object file defines 1 object. Make it executable and run many processes on linux and it is sort of a class.
+
+The bus in Python is a pythonic object, with automatic exit when needed etc,
+but in C you operate it manualy, handling signals to exit etc.
+Is one implementation for both languages possible?
+
+
+## the boards
 
 
 
-# Some organizational ideas
+
+## the CPU with linux and daq
+
+log, communications (messaging stack -- dqm could probably run from the log alone?)
+
+
+
+
+
+
+
+
+
+# organizational ideas
 
 * linux (unix?) is an interpreter
   it is a programmable environment on its' own,

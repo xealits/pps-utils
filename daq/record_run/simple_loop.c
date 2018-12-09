@@ -1,5 +1,5 @@
-#include <stdio.h>
-#include <stdint.h>
+#include "stdio.h"
+#include "stdint.h"
 
 #include "CAENVMElib.h"
 #include "CAENVMEtypes.h"
@@ -40,7 +40,7 @@ for (int i=0; i<n_tdcs; i++)
 	{
 	uint32_t tdc_addr = tdc_addresses[i];
 	call_return = CAENVME_ReadCycle(dev_handle, tdc_addr, call_output_buffer, AM, DW);
-	printf("%5d %2d %x\n", i, call_return, call_output_buffer);
+	printf("%5d %2d %x\n", i, call_return, (unsigned char)call_output_buffer);
 	}
 
 printf("run is finished, exiting\n");

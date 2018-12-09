@@ -6,11 +6,14 @@ import CAENVMEdefinitions
 from CAENVMEdefinitions import cvSuccess, CVBoardTypes_t, CVAddressModifier_t, CVDataWidth_t, CVErrorCodes_t, CAENVME_API
 import sys
 
+from os.path import isfile
+
 c_uint32_p = POINTER(c_uint32)
 c_int32_p = POINTER(c_int32)
 
 # our precious library
 libpath = './libCAENVME.so'
+assert isfile(libpath)
 cdll.LoadLibrary( libpath ) # TODO: if error -- break
 lib = CDLL( libpath )
 
