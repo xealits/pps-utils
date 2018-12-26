@@ -230,22 +230,22 @@ type test and other lib info
 
 # TODO: clarify here: 1) return value separately from inputs
 vme_bus_c_calls = {
-'CAENVME_SWRelease'      : [[CAENVME_API, 'ret'], [c_char_p, 'SwRel' , 'out']],
-'CAENVME_End'            : [[CAENVME_API, 'ret'], [c_int32,  'Handle', ]],
-'CAENVME_DeviceReset'    : [[CAENVME_API, 'ret'], [c_int32,  'Handle', ]],
-'CAENVME_BoardFWRelease' : [[CAENVME_API, 'ret'], [c_int32,  'Handle', ], [c_char_p, 'FWRel',   'out']],
-'CAENVME_DriverRelease'  : [[CAENVME_API, 'ret'], [c_int32,  'Handle', ], [c_char_p, 'Rel'  ,   'out']],
-'CAENVME_ReadCycle'      : [[CAENVME_API, 'ret'], [c_int32,  'Handle', ], [c_uint32, 'Address', ], [c_char_p, 'Data', 'out'],
-                            [CVAddressModifier_t, 'AM'], [CVDataWidth_t, 'DW']],
-'CAENVME_WriteCycle'     : [[CAENVME_API, 'ret'], [c_int32,  'Handle', ], [c_uint32, 'Address', ], [c_char_p, 'Data'],
-                            [CVAddressModifier_t, 'AM'], [CVDataWidth_t, 'DW']],
+'CAENVME_SWRelease'      : {'func_def': (CAENVME_API, [[c_char_p, 'SwRel' , 'out']])},
+'CAENVME_End'            : {'func_def': (CAENVME_API, [[c_int32,  'Handle', ]])},
+'CAENVME_DeviceReset'    : {'func_def': (CAENVME_API, [[c_int32,  'Handle', ]])},
+'CAENVME_BoardFWRelease' : {'func_def': (CAENVME_API, [[c_int32,  'Handle', ], [c_char_p, 'FWRel',   'out']])},
+'CAENVME_DriverRelease'  : {'func_def': (CAENVME_API, [[c_int32,  'Handle', ], [c_char_p, 'Rel'  ,   'out']])},
+'CAENVME_ReadCycle'      : {'func_def': (CAENVME_API, [[c_int32,  'Handle', ], [c_uint32, 'Address', ], [c_char_p, 'Data', 'out'],
+                            [CVAddressModifier_t, 'AM'], [CVDataWidth_t, 'DW']])},
+'CAENVME_WriteCycle'     : {'func_def': (CAENVME_API, [[c_int32,  'Handle', ], [c_uint32, 'Address', ], [c_char_p, 'Data'],
+                            [CVAddressModifier_t, 'AM'], [CVDataWidth_t, 'DW']])},
 }
 
 def typecheck_c_call(func_name, args):
     # skip the ret type
     logging.debug('typecheck: %s , %s' % (func_name, repr(args)))
-    func_def = vme_bus_c_calls[func_name]
-    data_types = [par_def[0] for par_def in func_def[1:]]
+    func_def = vme_bus_c_calls[func_name]['func_def']
+    data_types = [par_def[0] for par_def in func_def[1]]
     logging.debug(data_types)
     logging.debug(args)
     return len(data_types) == len(args) and all(isinstance(arg, data_t) for arg, data_t in zip(args, data_types))
@@ -300,7 +300,7 @@ class VMEBus:
         # find the out arguments according to the datasheet
         # "out" arguments are mutable inputs, pointers, which the lib uses for output
         # return [(argument, out_or_not?)]
-        arguments = [(a, len(arg_def)>2 and arg_def[2] == 'out') for a, arg_def in zip(arguments, vme_bus_c_calls[command][1:])]
+        arguments = [(a, len(arg_def)>2 and arg_def[2] == 'out') for a, arg_def in zip(arguments, vme_bus_c_calls[command]['func_def'][1])]
         logging.debug(repr(arguments))
 
         # call the c lib via the protocol of C calls
