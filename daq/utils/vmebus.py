@@ -11,6 +11,10 @@ from os.path import isfile
 c_uint32_p = POINTER(c_uint32)
 c_int32_p = POINTER(c_int32)
 
+# convenient C variables
+def charp(init_val='____'):
+    return c_char_p(bytes(init_val, 'utf'))
+
 # for convenience load the library if the file is there
 std_libpath = './libCAENVME.so'
 if isfile(std_libpath):
@@ -300,7 +304,7 @@ class VMEBus:
         logging.debug(repr(arguments))
 
         # call the c lib via the protocol of C calls
-        err, output_arguments = call_lib(lib, command, arguments)
+        err, output_arguments = call_lib(self._lib, command, arguments)
         # C call to a function in the library
         # returns the return value of the function and the list of input arguments which are marked as output
 
