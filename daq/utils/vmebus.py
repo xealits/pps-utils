@@ -11,11 +11,13 @@ from os.path import isfile
 c_uint32_p = POINTER(c_uint32)
 c_int32_p = POINTER(c_int32)
 
-# our precious library
-libpath = './libCAENVME.so'
-assert isfile(libpath)
-cdll.LoadLibrary( libpath ) # TODO: if error -- break
-lib = CDLL( libpath )
+# for convenience load the library if the file is there
+std_libpath = './libCAENVME.so'
+if isfile(std_libpath):
+    cdll.LoadLibrary( std_libpath ) # TODO: if error -- break
+    std_lib = CDLL( std_libpath )
+else:
+    std_lib = None
 
 
 '''
@@ -222,7 +224,8 @@ type test and other lib info
 но пока запишем в питоновские структуры
 '''
 
-vme_bus_datasheet = {
+# TODO: clarify here: 1) return value separately from inputs
+vme_bus_c_calls = {
 'CAENVME_SWRelease'      : [[CAENVME_API, 'ret'], [c_char_p, 'SwRel' , 'out']],
 'CAENVME_End'            : [[CAENVME_API, 'ret'], [c_int32,  'Handle', ]],
 'CAENVME_DeviceReset'    : [[CAENVME_API, 'ret'], [c_int32,  'Handle', ]],
@@ -234,14 +237,14 @@ vme_bus_datasheet = {
                             [CVAddressModifier_t, 'AM'], [CVDataWidth_t, 'DW']],
 }
 
-def typecheck_call(func_name, args):
+def typecheck_c_call(func_name, args):
     # skip the ret type
-    func_def = vme_bus_datasheet[func_name]
+    logging.debug('typecheck: %s , %s' % (func_name, repr(args)))
+    func_def = vme_bus_c_calls[func_name]
     data_types = [par_def[0] for par_def in func_def[1:]]
     logging.debug(data_types)
     logging.debug(args)
-    return len(data_types) == len(args) and all(isinstance(arg, data_t) for data_t, arg in zip(data_types, args))
-
+    return len(data_types) == len(args) and all(isinstance(arg, data_t) for arg, data_t in zip(args, data_types))
 
 # из-за консольности всё передаются текстом и не видно смысла в хардкодинге питоном, с полным объектом
 # что если просто функция вызова с 1 лишь дефаултом -- dev?
@@ -272,8 +275,6 @@ class VMEBus:
             logging.error("VME_Init error %s" % err)
             sys.exit(1)
 
-        # and generate methods from the datasheet?
-
     # now, it would be nice to have help messages for each call here...
     def call(self, command: str, arguments: list):
         """
@@ -282,14 +283,27 @@ class VMEBus:
         arguments = [<arg>]
         """
 
+        logging.debug('call: %s , %s' % (command, repr(arguments)))
+        # check the command is in the datasheet
+        assert command in vme_bus_c_calls
+
+        # all commands in the lib take the dev number, except the SWRelease command
         if command != 'CAENVME_SWRelease':
             arguments = [self.dev] + arguments
 
-        assert typecheck_call(command, arguments)
-        arguments = [(a, len(arg_def)>2 and arg_def[2] == 'out') for a, arg_def in zip(arguments, vme_bus_datasheet[command][1:])]
+        # check agains the the call type definition
+        assert typecheck_c_call(command, arguments)
+        # find the out arguments according to the datasheet
+        # "out" arguments are mutable inputs, pointers, which the lib uses for output
+        # return [(argument, out_or_not?)]
+        arguments = [(a, len(arg_def)>2 and arg_def[2] == 'out') for a, arg_def in zip(arguments, vme_bus_c_calls[command][1:])]
         logging.debug(repr(arguments))
 
+        # call the c lib via the protocol of C calls
         err, output_arguments = call_lib(lib, command, arguments)
+        # C call to a function in the library
+        # returns the return value of the function and the list of input arguments which are marked as output
+
         #logging.debug('error: %s' % err)
         #for a in output_arguments:
         #    print(a.value)
@@ -297,9 +311,33 @@ class VMEBus:
 
     def __del__(self):
 
-        # exit
+        # exit the lib
         err = self._lib.CAENVME_End(self.dev)
         logging.debug('VME end w. error: %s' % err)
+
+
+# and generate methods from the datasheet
+
+def set_vme_c_call(command_name: str):
+    assert command_name in vme_bus_c_calls
+    # TODO: these calls lack proper help, with doc string and function def, metaprograming is needed
+    def command_call(*args):
+        com_self, arguments = args[0], args[1:]
+        return com_self.call(command_name, list(arguments))
+    setattr(VMEBus, command_name, command_call)
+
+# just syntactic convenience over the "call" method
+for command_name, _ in vme_bus_c_calls.items():
+    logging.debug('generating VMEBus attribute %s' % command_name)
+    set_vme_c_call(command_name)
+
+'''
+isn't it entangled now? - no, it's fine
+It's a datasheet, which among other stuff contains C lib description with all the calls.
+This python module semi-generates a python representation of the bus, including the calls via the lib.
+Basically python's representation is a pythonic object making the C calls of the lib + some more docs from the datasheet.
+'''
+
 
 prelim_vme_bus_datasheet_full = {
 'CAENVME_SWRelease':      [c_char_p],
@@ -333,6 +371,8 @@ prelim_vme_bus_datasheet_full = {
 
 
 if __name__ == '__main__':
+    # commandline utility in main
+
     parser = argparse.ArgumentParser(
         formatter_class = argparse.RawDescriptionHelpFormatter,
         description = "run VME bus command",
@@ -343,8 +383,9 @@ if __name__ == '__main__':
     """)
 
 
-    parser.add_argument("command", help="command name")
-    parser.add_argument("--debug", action='store_true', help="logging level DEBUG")
+    parser.add_argument("command", help='command name')
+    parser.add_argument("--debug", action='store_true', help='logging level DEBUG')
+    parser.add_argument("--lib-path", type=str, help='custom path to the VME lib')
     parser.add_argument('arguments', nargs='*', help='command arguments')
 
 
@@ -378,6 +419,12 @@ if __name__ == '__main__':
         sys.exit(1)
     '''
 
+    # our precious library
+    libpath = args.lib_path if args.lib_path else std_libpath
+    assert isfile(libpath)
+    cdll.LoadLibrary( libpath ) # TODO: if error -- break
+    lib = CDLL( libpath )
+
     bus = VMEBus(lib)
 
     ## release versions
@@ -393,14 +440,42 @@ if __name__ == '__main__':
         arguments = [dev] + arguments
 
     #err = eval('lib.%s(*arguments)' % args.command)
-    assert typecheck_call(args.command, arguments)
-    #arguments = [(a, len(vme_bus_datasheet[args.command])>2 and vme_bus_datasheet[args.command][2] == 'out') for a in arguments]
-    arguments = [(a, len(arg_def)>2 and arg_def[2] == 'out') for a, arg_def in zip(arguments, vme_bus_datasheet[args.command][1:])]
+    assert typecheck_c_call(args.command, arguments)
+    #arguments = [(a, len(vme_bus_c_calls[args.command])>2 and vme_bus_c_calls[args.command][2] == 'out') for a in arguments]
+    arguments = [(a, len(arg_def)>2 and arg_def[2] == 'out') for a, arg_def in zip(arguments, vme_bus_c_calls[args.command][1:])]
     logging.debug(repr(arguments))
     err, output_arguments = call_lib(lib, args.command, arguments)
     '''
 
     err, output_arguments = bus.call(args.command, parse_vme_arguments(args.arguments))
+
+    """анализ что за структура тут, насколько общая
+    1) работает объект VME шины
+    2) он делает общую операцию "call"
+    3) которая выполняется по названию команды и неким вводным параметрам
+    4) на вывод идут исходящие аргументы и ошибка
+    --- исходящие аргументы и ошибка это точно соотв. библиотеке,
+        исходящие аргументы это часть из вводных на самом деле,
+        единственное что смущает это общая операция вместо конкретных,
+        но конкретные методы тяжело встроить в работу с командной строкой,
+        со строчными вводами
+    эта общая операция может иметь смысл "in band communication"
+    т.е. что-то что шина делает на своей основной полосе,
+    но протокол же завиксирован, так что "read", "block read" должны быть захардкодены
+
+    looking into the call:
+    это "C call" -- вызов С-щной библиотеки
+    возможно С-шность вмешивается в представление шины здесь?
+    т.е. объект шины не достаточно инкапсулировал С-шную библиотеку,
+    какие-то детали остались, это недостаточно чистый "адаптер" в шину?
+    Единственное что инкапсулировано сейчас это передача dev номера при вызовах.
+
+    Добавил генерацию конкретных операций, позапускал.
+    Вроде ок, передаются только ключевые параметры, прямо по вызову, без доп. списков,
+    автоматически возвращается ошибка и выводные параметры.
+    Красота, только приходится возиться с объявлением C-шных переменных.
+    Нужно поделать удобных объектов типа "charp", вместе с языком для шелла.
+    """
 
     logging.debug('error: %s' % err)
     for a in output_arguments:
