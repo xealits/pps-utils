@@ -12,7 +12,7 @@ c_uint32_p = POINTER(c_uint32)
 c_int32_p = POINTER(c_int32)
 
 # convenient C variables
-def charp(init_val='____'):
+def charp(init_val='________'):
     return c_char_p(bytes(init_val, 'utf'))
 
 # for convenience load the library if the file is there
@@ -228,27 +228,26 @@ type test and other lib info
 но пока запишем в питоновские структуры
 '''
 
-# TODO: clarify here: 1) return value separately from inputs
 vme_bus_c_calls = {
-'CAENVME_SWRelease'      : {'func_def': (CAENVME_API, [[c_char_p, 'SwRel' , 'out']])},
-'CAENVME_End'            : {'func_def': (CAENVME_API, [[c_int32,  'Handle', ]])},
-'CAENVME_DeviceReset'    : {'func_def': (CAENVME_API, [[c_int32,  'Handle', ]])},
-'CAENVME_BoardFWRelease' : {'func_def': (CAENVME_API, [[c_int32,  'Handle', ], [c_char_p, 'FWRel',   'out']])},
-'CAENVME_DriverRelease'  : {'func_def': (CAENVME_API, [[c_int32,  'Handle', ], [c_char_p, 'Rel'  ,   'out']])},
-'CAENVME_ReadCycle'      : {'func_def': (CAENVME_API, [[c_int32,  'Handle', ], [c_uint32, 'Address', ], [c_char_p, 'Data', 'out'],
-                            [CVAddressModifier_t, 'AM'], [CVDataWidth_t, 'DW']])},
-'CAENVME_WriteCycle'     : {'func_def': (CAENVME_API, [[c_int32,  'Handle', ], [c_uint32, 'Address', ], [c_char_p, 'Data'],
-                            [CVAddressModifier_t, 'AM'], [CVDataWidth_t, 'DW']])},
+'CAENVME_SWRelease'      : {'func_def': (CAENVME_API, [(c_char_p, ['SwRel' , 'out'])])},
+'CAENVME_End'            : {'func_def': (CAENVME_API, [(c_int32,  ['Handle', ])])},
+'CAENVME_DeviceReset'    : {'func_def': (CAENVME_API, [(c_int32,  ['Handle', ])])},
+'CAENVME_BoardFWRelease' : {'func_def': (CAENVME_API, [(c_int32,  ['Handle', ]), (c_char_p, ['FWRel',   'out'])])},
+'CAENVME_DriverRelease'  : {'func_def': (CAENVME_API, [(c_int32,  ['Handle', ]), (c_char_p, ['Rel'  ,   'out'])])},
+'CAENVME_ReadCycle'      : {'func_def': (CAENVME_API, [(c_int32,  ['Handle', ]), (c_uint32, ['Address', ]), (c_char_p, ['Data', 'out']),
+                            (CVAddressModifier_t, ['AM']), (CVDataWidth_t, ['DW'])])},
+'CAENVME_WriteCycle'     : {'func_def': (CAENVME_API, [(c_int32,  ['Handle', ]), (c_uint32, ['Address', ]), (c_char_p, ['Data']),
+                            (CVAddressModifier_t, ['AM']), (CVDataWidth_t, ['DW'])])},
 }
 
 def typecheck_c_call(func_name, args):
     # skip the ret type
     logging.debug('typecheck: %s , %s' % (func_name, repr(args)))
-    func_def = vme_bus_c_calls[func_name]['func_def']
-    data_types = [par_def[0] for par_def in func_def[1]]
-    logging.debug(data_types)
+    func_def  = vme_bus_c_calls[func_name]['func_def']
+    par_types = [par_def[0] for par_def in func_def[1]]
+    logging.debug(par_types)
     logging.debug(args)
-    return len(data_types) == len(args) and all(isinstance(arg, data_t) for arg, data_t in zip(args, data_types))
+    return len(par_types) == len(args) and all(isinstance(arg, data_t) for arg, data_t in zip(args, par_types))
 
 # из-за консольности всё передаются текстом и не видно смысла в хардкодинге питоном, с полным объектом
 # что если просто функция вызова с 1 лишь дефаултом -- dev?
@@ -281,7 +280,7 @@ class VMEBus:
 
     # now, it would be nice to have help messages for each call here...
     def call(self, command: str, arguments: list):
-        """
+        """call(self, command: str, arguments: list)
 
         command 
         arguments = [<arg>]
@@ -300,7 +299,7 @@ class VMEBus:
         # find the out arguments according to the datasheet
         # "out" arguments are mutable inputs, pointers, which the lib uses for output
         # return [(argument, out_or_not?)]
-        arguments = [(a, len(arg_def)>2 and arg_def[2] == 'out') for a, arg_def in zip(arguments, vme_bus_c_calls[command]['func_def'][1])]
+        arguments = [(a, 'out' in arg_def[1]) for a, arg_def in zip(arguments, vme_bus_c_calls[command]['func_def'][1])]
         logging.debug(repr(arguments))
 
         # call the c lib via the protocol of C calls
@@ -321,13 +320,22 @@ class VMEBus:
 
 
 # and generate methods from the datasheet
-
 def set_vme_c_call(command_name: str):
     assert command_name in vme_bus_c_calls
-    # TODO: these calls lack proper help, with doc string and function def, metaprograming is needed
+    logging.debug('dynamic setting %s' % command_name)
+
     def command_call(*args):
         com_self, arguments = args[0], args[1:]
         return com_self.call(command_name, list(arguments))
+
+    # TODO: these calls lack proper help, with doc string and function def, metaprograming is needed
+    command_call.__name__ = command_name
+    inp_string = ', '.join(str(i) for i in vme_bus_c_calls[command_name]['func_def'][1] if 'Handle' not in i[1])
+    out_string = str(vme_bus_c_calls[command_name]['func_def'][0])
+    doc_string = "expects = {inp}\nreturns = {out}".format(inp=inp_string, out=out_string)
+    command_call.__doc__  = doc_string
+    logging.debug('dynamic setting %s doc_string %s' % (command_name, doc_string))
+
     setattr(VMEBus, command_name, command_call)
 
 # just syntactic convenience over the "call" method
