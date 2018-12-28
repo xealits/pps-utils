@@ -153,6 +153,14 @@ def typecheck_c_call(func_name, args):
     par_types = [par_def[0] for par_def in func_def[1]]
     logging.debug(par_types)
     logging.debug(args)
+
+    # substitute typical python objects with ctypes:
+    for n, (arg, data_t) in enumerate(zip(args, par_types)):
+        if   isinstance(arg, str):
+            args[n] = charp(arg)
+        elif isinstance(arg, int):
+            args[n] = data_t(arg)
+
     return len(par_types) == len(args) and all(isinstance(arg, data_t) for arg, data_t in zip(args, par_types))
 
 # из-за консольности всё передаются текстом и не видно смысла в хардкодинге питоном, с полным объектом
