@@ -1,19 +1,20 @@
 """
-commandline utility in main
+commandline utility in main with expicit C calls
 """
 
 import argparse, logging
 import sys
 from os.path import isfile
 from ctypes import POINTER, pointer, c_uint32, c_int32, c_int, c_short, c_char, c_char_p
+from CAENVMEdefinitions import cvSuccess, CVBoardTypes_t, CVAddressModifier_t, CVDataWidth_t, CVErrorCodes_t, CAENVME_API
 
 parser = argparse.ArgumentParser(
     formatter_class = argparse.RawDescriptionHelpFormatter,
     description = "run VME bus command",
     epilog = """Examples:
-python3 vmebus.py CAENVME_SWRelease charp=________
-python3 vmebus.py CAENVME_BoardFWRelease charp=________
-python3 vmebus.py CAENVME_ReadCycle uint32=0xa10 charp=______________ AM=2 DW=3
+python3 vmebus_c_call.py CAENVME_SWRelease charp=________
+python3 vmebus_c_call.py CAENVME_BoardFWRelease charp=________
+python3 vmebus_c_call.py CAENVME_ReadCycle uint32=0xa10 charp=______________ AM=2 DW=3
 """)
 
 
@@ -87,7 +88,7 @@ def parse_vme_arguments(comline_args):
 
     <type>[:<N vect>][=<init val>]
 
-    returns [arg]
+    returns [arg] with corresponding ctypes objects
     '''
 
     arguments = []
@@ -163,6 +164,21 @@ def parse_vme_arguments(comline_args):
         #    output_arguments.append(the_argument)
 
     return arguments
+
+'''
+the cards are spaces of memory, this:
+
+    datasheet_dict[card][register]
+
+--- returns the address of this register on the chip
+
+the minilanguage:
+
+    tdc@00aa:control_register
+    <card nickname>@<global address>:<register nickname>
+
+is substituted with `<global><card[register]>` -- with some mask for the card space and global space
+'''
 
 # the input arguments are direct C types (ctypes literally)
 err, output_arguments = bus.call(args.command, parse_vme_arguments(args.arguments))

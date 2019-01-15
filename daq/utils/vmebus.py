@@ -149,19 +149,34 @@ vme_bus_c_calls = {
 def typecheck_c_call(func_name, args):
     # skip the ret type
     logging.debug('typecheck: %s , %s' % (func_name, repr(args)))
+    # get the parameter types
     func_def  = vme_bus_c_calls[func_name]['func_def']
     par_types = [par_def[0] for par_def in func_def[1]]
     logging.debug(par_types)
     logging.debug(args)
 
-    # substitute typical python objects with ctypes:
+    # try to convert inputs with typical python objects to ctypes:
+    converted_args = []
     for n, (arg, data_t) in enumerate(zip(args, par_types)):
-        if   isinstance(arg, str):
-            args[n] = charp(arg)
-        elif isinstance(arg, int):
-            args[n] = data_t(arg)
+        #if   isinstance(arg, str):
+        #    args[n] = charp(arg)
+        #elif isinstance(arg, int):
+        #    args[n] = data_t(arg)
+        # no! convert based on the function definition
+        if isinstance(arg, data_t):
+            converted_args.append(arg)
+        elif data_t == c_char_p:
+            converted_args.append(charp(arg))
+        else:
+            # damn handling all the ints
+            # assume hex
+            converted_args.append(data_t(int(arg, 16)))
 
-    return len(par_types) == len(args) and all(isinstance(arg, data_t) for arg, data_t in zip(args, par_types))
+    # check all worked
+    if len(par_types) == len(converted_args) and all(isinstance(arg, data_t) for arg, data_t in zip(converted_args, par_types)):
+        return converted_args
+    else:
+        return None
 
 # из-за консольности всё передаются текстом и не видно смысла в хардкодинге питоном, с полным объектом
 # что если просто функция вызова с 1 лишь дефаултом -- dev?
@@ -169,7 +184,12 @@ def typecheck_c_call(func_name, args):
 # пока сделаем текстовый метод "call", из которого потом сгенерируем отдельные методы
 
 class VMEBus:
-    "defines type, name (nickname, description) and out/in/ret behaviour of parameter"
+    """
+    defines type, name (nickname, description) and out/in/ret behaviour of parameter
+
+    the bus objects represents a session on a bus,
+    it exhibits only essential input parameters for the bus calls in the methods
+    """
 
     def __init__(self, lib_path='./libCAENVME.so', board_type=CAENVMEdefinitions.cvV2718.value, link=0, bdnum=0):
         """VMEBus(lib)
@@ -195,6 +215,41 @@ class VMEBus:
             logging.error("VME_Init error %s" % err)
             sys.exit(1)
 
+    def _full_args(self, command, arguments):
+
+        # all commands in the lib take the dev number, except the SWRelease command
+        if command != 'CAENVME_SWRelease':
+            arguments = [self.dev] + arguments
+
+        return arguments
+
+    # TODO:
+    # here _full_args or some _skip_args info
+    # must be used for the mapping of bus session interface to the full lib interface (adapter?)
+    # which is used in both getting the full list of arguments (with some logic for defining the missing params)
+    # and in getting the args info from the datasheet
+    # datasheet is about the C lib
+    # this bus object defines a bus session -- it's simple but a different object, there is an adapter thing between them
+
+    def command_args_info(self, command: str, arguments: list):
+        """command_full_args(self, command: str, arguments: list)
+
+        arguments -- list of essential command arguments in the bus session
+                     some arguments for the lib might be missing
+
+        return full list of arguments, with their info from datasheet [(arg_type, [infolist])]
+        """
+
+        logging.debug('VMEBus command_full_args: %s , %s' % (command, repr(arguments)))
+
+        # attach info
+        full_args = []
+        for n, arg in enumerate(arguments):
+            info = vme_bus_c_calls[command]['func_def'][1][n][1]
+            full_args.append((arg, info))
+
+        return full_args
+
     # now, it would be nice to have help messages for each call here...
     def call(self, command: str, arguments: list):
         """call(self, command: str, arguments: list)
@@ -207,20 +262,23 @@ class VMEBus:
         # check the command is in the datasheet
         assert command in vme_bus_c_calls
 
-        # all commands in the lib take the dev number, except the SWRelease command
-        if command != 'CAENVME_SWRelease':
-            arguments = [self.dev] + arguments
+        # get the full arguments list
+        arguments = self._full_args(command, arguments)
 
+        # now the list must be full for the library
         # check agains the the call type definition
-        assert typecheck_c_call(command, arguments)
+        converted_args = typecheck_c_call(command, arguments)
+        if not converted_args:
+            raise TypeError('the input arguments have wrong type: %s vs %s' % (repr(arguments), repr(vme_bus_c_calls[command]['func_def'][1])))
+
         # find the out arguments according to the datasheet
         # "out" arguments are mutable inputs, pointers, which the lib uses for output
         # return [(argument, out_or_not?)]
-        arguments = [(a, 'out' in arg_def[1]) for a, arg_def in zip(arguments, vme_bus_c_calls[command]['func_def'][1])]
-        logging.debug(repr(arguments))
+        converted_args = [(a, 'out' in arg_def[1]) for a, arg_def in zip(converted_args, vme_bus_c_calls[command]['func_def'][1])]
+        logging.debug(repr(converted_args))
 
         # call the c lib via the protocol of C calls
-        err, output_arguments = call_lib(self._lib, command, arguments)
+        err, output_arguments = call_lib(self._lib, command, converted_args)
         # C call to a function in the library
         # returns the return value of the function and the list of input arguments which are marked as output
 
@@ -297,3 +355,4 @@ prelim_vme_bus_datasheet_full = {
 'CAENVME_ADOHCycle': [c_int32, c_uint32, CVAddressModifier_t],
 }
 
+logging.debug('vmebus is done')
